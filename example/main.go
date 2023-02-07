@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
 	"image"
 	_ "image/png"
 	"log"
+	"os"
 	"reflect"
 	"runtime"
 	"strings"
@@ -35,9 +35,6 @@ var (
 	// The awesome sprite is taken from here:
 	// https://aamatniekss.itch.io/fantasy-knight-free-pixelart-animated-character
 	// Go checkout the artist's pixel work.
-	//
-	//go:embed _AttackComboNoMovement.png
-	imageFile []byte
 
 	easeFuncs = []ease.TweenFunc{
 		ease.Linear,
@@ -56,7 +53,7 @@ var (
 
 type Game struct {
 	sheet     *ebiten.Image
-	anim      *vigor.Animation
+	animSet   *vigor.AnimationSet
 	funcIndex int
 	millis    int
 }
@@ -64,25 +61,25 @@ type Game struct {
 func (g *Game) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
 		g.millis += 100
-		g.recreate()
+		g.applySettings()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
 		if g.millis >= 200 {
 			g.millis -= 100
-			g.recreate()
+			g.applySettings()
 		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
-		if g.funcIndex > 1 {
+		if g.funcIndex > 0 {
 			g.funcIndex--
-			g.recreate()
+			g.applySettings()
 		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
 		if g.funcIndex < len(easeFuncs)-1 {
 			g.funcIndex++
-			g.recreate()
+			g.applySettings()
 		}
 	}
 
-	g.anim.Update(time.Second / time.Duration(ebiten.TPS())) // 1/60 sec
+	g.animSet.Update(time.Second / time.Duration(ebiten.TPS())) // 1/60 sec
 
 	return nil
 }
@@ -91,9 +88,9 @@ func (g *Game) Draw(target *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenWidth/2, screenHeight/2)
 	op.GeoM.Translate(-frameWidth/2, -frameHeight/2)
-	g.anim.Draw(target, op)
+	g.animSet.Draw(target, op)
 
-	msg := fmt.Sprintf("Ease func: %s\nDuration: %d ms",
+	msg := fmt.Sprintf("Ease func: %s (left/right arrows)\nDuration: %d ms (up/down arrows)",
 		GetFunctionName(easeFuncs[g.funcIndex]),
 		g.millis,
 	)
@@ -107,37 +104,40 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func NewGame() *Game {
 	g := &Game{
 		funcIndex: 0,
-		millis:    500,
+		millis:    700,
 	}
 
-	img, _, err := image.Decode(bytes.NewReader(imageFile))
+	loader := func(path string) (*ebiten.Image, error) {
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		img, _, err := image.Decode(f)
+		if err != nil {
+			return nil, err
+		}
+		ebImg := ebiten.NewImageFromImage(img)
+		return ebImg, nil
+	}
+
+	// Load set of animations from config file.
+	aSet, err := vigor.LoadAnimationSet(loader, "anim_data.json")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	g.sheet = ebiten.NewImageFromImage(img)
+	g.animSet = aSet
 
-	g.recreate()
+	g.animSet.Run()
 
 	return g
 }
 
-func (g *Game) recreate() {
-	section := vigor.NewSection(0, 0, frameWidth*10, frameHeight, 0)
-	var err error
-	g.anim, err = vigor.NewAnimation(
-		g.sheet,
-		section,
-		frameWidth,
-		frameHeight,
-		[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
-		time.Duration(g.millis)*time.Millisecond,
-		-1,
-		easeFuncs[g.funcIndex],
-	)
-	if err != nil {
-		panic(err)
-	}
-	g.anim.Start()
+func (g *Game) applySettings() {
+	a := g.animSet.ActiveAnimation
+	a.SetDuration(time.Duration(g.millis) * time.Millisecond)
+	a.SetTweenFunc(easeFuncs[g.funcIndex])
 }
 
 func main() {
