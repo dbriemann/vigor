@@ -2,14 +2,13 @@ package vigor
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 )
 
-// TODO: use better constraint than 'any'
 func loadData[T any](fpath string) (T, error) {
 	var t T
 
-	raw, err := ioutil.ReadFile(fpath)
+	raw, err := os.ReadFile(fpath)
 	if err != nil {
 		return t, err
 	}
@@ -20,21 +19,25 @@ func loadData[T any](fpath string) (T, error) {
 	return t, nil
 }
 
-type AnimationSetConfig struct {
-	Sections         []SectionConfig            `json:"sections"`
-	Animations       map[string]AnimationConfig `json:"animations"`
-	DefaultAnimation string                     `json:"defaultAnimation"`
+type ResourceConfig struct {
+	ResourceRoot string            `json:"resourceRoot"`
+	Images       map[string]string `json:"images"`
+	// TODO: audio
+	// TODO: others
+
+	Sections   map[string]SectionConfig   `json:"sections"`
+	Animations map[string]AnimationConfig `json:"animations"`
 }
 
 type AnimationConfig struct {
-	ImagePath  string `json:"imagePath"`
-	SectionID  int    `json:"sectionId"`
-	Frames     []int  `json:"frames"`
-	DurationMS int    `json:"durationMs"`
-	Width      int    `json:"width"`
-	Height     int    `json:"height"`
-	EaseFunc   string `json:"easeFunc"`
-	Loops      int    `json:"loops"`
+	ImageName   string `json:"imageName"`
+	SectionName string `json:"sectionName"`
+	Frames      []int  `json:"frames"`
+	DurationMS  int    `json:"durationMs"`
+	Width       int    `json:"width"`
+	Height      int    `json:"height"`
+	EaseFunc    string `json:"easeFunc"`
+	Loops       int    `json:"loops"`
 }
 
 type SectionConfig struct {

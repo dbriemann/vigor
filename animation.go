@@ -14,14 +14,16 @@ import (
 // TODO: add callbacks to update, draw, etc.
 
 var (
-	ErrColumnMismatch   = fmt.Errorf("columns do not match with frame width and padding")
-	ErrRowMismatch      = fmt.Errorf("rows do not match with frame height and padding")
-	ErrFrameCountZero   = fmt.Errorf("the calculated frame count is zero")
-	ErrUnknownEaseFunc  = fmt.Errorf("ease function name unknown")
-	ErrNoAnimations     = fmt.Errorf("no animations defined")
-	ErrNoSections       = fmt.Errorf("no sections defined")
-	ErrUnknownAnimation = fmt.Errorf("unknown animation")
-	ErrFileNotFound     = fmt.Errorf("file not found")
+	ErrColumnMismatch     = fmt.Errorf("columns do not match with frame width and padding")
+	ErrRowMismatch        = fmt.Errorf("rows do not match with frame height and padding")
+	ErrFrameCountZero     = fmt.Errorf("the calculated frame count is zero")
+	ErrFrameExceedsBounds = fmt.Errorf("frame index exceeds section bounds")
+	ErrUnknownEaseFunc    = fmt.Errorf("ease function name unknown")
+	ErrNoAnimations       = fmt.Errorf("no animations defined")
+	ErrNoSections         = fmt.Errorf("no sections defined")
+	ErrUnknownAnimation   = fmt.Errorf("unknown animation")
+	ErrFileNotFound       = fmt.Errorf("file not found")
+	ErrImageNotLoaded     = fmt.Errorf("image not loaded")
 )
 
 type Section struct {
@@ -47,116 +49,7 @@ func (s *Section) Bounds() image.Rectangle {
 	return image.Rect(s.left, s.top, s.left+s.width, s.top+s.height)
 }
 
-type AnimationSet struct {
-	Sections        []Section
-	Animations      map[string]*Animation
-	ActiveAnimation *Animation
-}
-
-type ImageLoaderFunc func(path string) (*ebiten.Image, error)
-
-func LoadAnimationSet(loaderFunc ImageLoaderFunc, cfgFile string) (*AnimationSet, error) {
-	cfg, err := loadData[AnimationSetConfig](cfgFile)
-	if err != nil {
-		return nil, err
-	}
-	if len(cfg.Animations) == 0 {
-		return nil, ErrNoAnimations
-	}
-	if len(cfg.Sections) == 0 {
-		return nil, ErrNoSections
-	}
-
-	as := &AnimationSet{
-		Sections:   []Section{},
-		Animations: map[string]*Animation{},
-	}
-	for _, secCfg := range cfg.Sections {
-		as.Sections = append(as.Sections, NewSection(secCfg.Left, secCfg.Top, secCfg.Width, secCfg.Height, secCfg.Padding))
-	}
-	for name, animCfg := range cfg.Animations {
-		img, err := loaderFunc(animCfg.ImagePath)
-		if err != nil {
-			return nil, ErrFileNotFound
-		}
-
-		f, ok := easeFuncMappings[animCfg.EaseFunc]
-		if !ok {
-			return nil, ErrUnknownEaseFunc
-		}
-		a, err := NewAnimation(
-			img,
-			as.Sections[animCfg.SectionID],
-			animCfg.Width,
-			animCfg.Height,
-			animCfg.Frames,
-			time.Duration(animCfg.DurationMS*int(time.Millisecond)),
-			animCfg.Loops,
-			f,
-		)
-		if err != nil {
-			return nil, err
-		}
-		as.Animations[name] = a
-	}
-
-	if err := as.Switch(cfg.DefaultAnimation); err != nil {
-		return nil, err
-	}
-
-	return as, nil
-}
-
-// Switch changes the active animation and returns an ErrUnknownAnimation if the name does not exist.
-func (as *AnimationSet) Switch(name string) error {
-	if as.ActiveAnimation != nil {
-		as.ActiveAnimation.Stop()
-		// TODO reset?
-	}
-
-	anim, ok := as.Animations[name]
-	if !ok {
-		return ErrUnknownAnimation
-	}
-	as.ActiveAnimation = anim
-
-	// TODO: start?
-
-	return nil
-}
-
-func (as *AnimationSet) Run() {
-	if as.ActiveAnimation != nil {
-		as.ActiveAnimation.Run()
-	}
-}
-
-func (as *AnimationSet) Stop() {
-	if as.ActiveAnimation != nil {
-		as.ActiveAnimation.Stop()
-	}
-}
-
-func (as *AnimationSet) Reset() {
-	if as.ActiveAnimation != nil {
-		as.ActiveAnimation.Reset()
-	}
-}
-
-func (as *AnimationSet) Update(dt time.Duration) {
-	if as.ActiveAnimation != nil {
-		as.ActiveAnimation.Update(dt)
-	}
-}
-
-func (as *AnimationSet) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	if as.ActiveAnimation != nil {
-		as.ActiveAnimation.Draw(target, op)
-	}
-}
-
 type Animation struct {
-	spriteSheet *ebiten.Image
 	section     Section
 	frameWidth  int
 	frameHeight int
@@ -173,7 +66,6 @@ type Animation struct {
 
 func NewAnimation(sheet *ebiten.Image, section Section, w, h int, frames []int, duration time.Duration, loops int, tweenFunc ease.TweenFunc) (*Animation, error) {
 	a := &Animation{
-		spriteSheet:  sheet,
 		section:      section,
 		frameWidth:   w,
 		frameHeight:  h,
@@ -191,18 +83,23 @@ func NewAnimation(sheet *ebiten.Image, section Section, w, h int, frames []int, 
 	// NOTE: A padding larger than the frame will break this function.
 
 	// Check if section and frame size are a fit.
-	if a.spriteSheet.Bounds().Max.X%(a.frameWidth+a.section.padding) != a.section.padding {
+	if sheet.Bounds().Max.X%(a.frameWidth+a.section.padding) != a.section.padding {
 		return nil, ErrColumnMismatch
 	}
-	if a.spriteSheet.Bounds().Max.Y%(a.frameHeight+a.section.padding) != a.section.padding {
+	if sheet.Bounds().Max.Y%(a.frameHeight+a.section.padding) != a.section.padding {
 		return nil, ErrRowMismatch
 	}
-	columns := a.spriteSheet.Bounds().Max.X / (a.frameWidth + a.section.padding)
-	rows := a.spriteSheet.Bounds().Max.Y / (a.frameHeight + a.section.padding)
+	columns := sheet.Bounds().Max.X / (a.frameWidth + a.section.padding)
+	rows := sheet.Bounds().Max.Y / (a.frameHeight + a.section.padding)
 
 	numFrames := columns * rows
 	if numFrames == 0 {
 		return nil, ErrFrameCountZero
+	}
+	for _, f := range a.frames {
+		if f >= numFrames {
+			return nil, ErrFrameExceedsBounds
+		}
 	}
 
 	for y := 0; y < rows; y++ {
@@ -211,7 +108,10 @@ func NewAnimation(sheet *ebiten.Image, section Section, w, h int, frames []int, 
 				X: a.section.left + (x+1)*a.section.padding + x*a.frameWidth,
 				Y: a.section.top + (y+1)*a.section.padding + y*a.frameHeight,
 			}
-			subImg := a.spriteSheet.SubImage(image.Rect(
+			// TODO: should we externalize the sprites/sheets?
+			// Optimize: many animations that use "the same" sprites.
+			//
+			subImg := sheet.SubImage(image.Rect(
 				upperLeft.X,
 				upperLeft.Y,
 				upperLeft.X+a.frameWidth,
@@ -243,9 +143,8 @@ func (a *Animation) Stop() {
 	a.paused = true
 }
 
-// Update selects the current frame to draw by applying delta time and the
-// easing function.
-func (a *Animation) Update(dt time.Duration) {
+// Update selects the current frame to draw considering the easing function.
+func (a *Animation) Update() {
 	if a.paused || len(a.frames) <= 1 {
 		return
 	}
@@ -254,7 +153,8 @@ func (a *Animation) Update(dt time.Duration) {
 		return
 	}
 
-	interpolation, finished := a.tween.Update(float32(dt.Seconds()))
+	dt := 1.0 / float32(ebiten.TPS())
+	interpolation, finished := a.tween.Update(dt)
 	a.lastFrame = a.currentFrame
 	frameIndex := int(math.Round(float64(interpolation)))
 	a.currentFrame = a.frames[frameIndex]

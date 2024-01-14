@@ -1,0 +1,38 @@
+{
+	"resourceRoot": "assets/",
+	"images": {
+		"images/_AttackComboNoMovement.png": "knight_attack_sheet"
+	},
+	"sections": {
+		"knight_attack_section": {
+			"left": 0,
+			"top": 0,
+			"width": 1200,
+			"height": 80,
+			"padding": 0
+		}
+	},
+	"animations": {
+		"knight_attack1": {
+			"imageName": "knight_attack_sheet",
+			"sectionName": "knight_attack_section",
+			"frames": [
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9
+			],
+			"durationMs": 700,
+			"width": 120,
+			"height": 80,
+			"easeFunc": "Linear",
+			"loops": -1
+		}
+	}
+}

@@ -3,10 +3,8 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"image"
 	_ "image/png"
 	"log"
-	"os"
 	"reflect"
 	"runtime"
 	"strings"
@@ -52,8 +50,8 @@ var (
 )
 
 type Game struct {
-	sheet     *ebiten.Image
-	animSet   *vigor.AnimationSet
+	man       vigor.ResourceManager
+	anim      string
 	funcIndex int
 	millis    int
 }
@@ -79,7 +77,7 @@ func (g *Game) Update() error {
 		}
 	}
 
-	g.animSet.Update(time.Second / time.Duration(ebiten.TPS())) // 1/60 sec
+	g.man.Animations[g.anim].Update()
 
 	return nil
 }
@@ -88,7 +86,7 @@ func (g *Game) Draw(target *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenWidth/2, screenHeight/2)
 	op.GeoM.Translate(-frameWidth/2, -frameHeight/2)
-	g.animSet.Draw(target, op)
+	g.man.Animations[g.anim].Draw(target, op)
 
 	msg := fmt.Sprintf("Ease func: %s (left/right arrows)\nDuration: %d ms (up/down arrows)",
 		GetFunctionName(easeFuncs[g.funcIndex]),
@@ -105,37 +103,21 @@ func NewGame() *Game {
 	g := &Game{
 		funcIndex: 0,
 		millis:    700,
+		man:       vigor.NewResourceManager(),
+		anim:      "knight_attack1",
 	}
 
-	loader := func(path string) (*ebiten.Image, error) {
-		f, err := os.Open(path)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-
-		img, _, err := image.Decode(f)
-		if err != nil {
-			return nil, err
-		}
-		ebImg := ebiten.NewImageFromImage(img)
-		return ebImg, nil
-	}
-
-	// Load set of animations from config file.
-	aSet, err := vigor.LoadAnimationSet(loader, "anim_data.json")
-	if err != nil {
+	if err := g.man.LoadConfig("assets/config.json"); err != nil {
 		panic(err)
 	}
-	g.animSet = aSet
 
-	g.animSet.Run()
+	g.man.Animations[g.anim].Run()
 
 	return g
 }
 
 func (g *Game) applySettings() {
-	a := g.animSet.ActiveAnimation
+	a := g.man.Animations[g.anim]
 	a.SetDuration(time.Duration(g.millis) * time.Millisecond)
 	a.SetTweenFunc(easeFuncs[g.funcIndex])
 }
