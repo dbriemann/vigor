@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func loadData[T any](fpath string) (T, error) {
+func loadConfigData[T any](fpath string) (T, error) {
 	var t T
 
 	raw, err := os.ReadFile(fpath)

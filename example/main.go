@@ -50,8 +50,11 @@ var (
 )
 
 type Game struct {
-	man       vigor.ResourceManager
-	anim      string
+	man        vigor.ResourceManager
+	knightAnim *vigor.Animation
+	// TODO: background knights using same animation template.
+	// TODO: count draw calls with ebiten debug capabilities.
+	// bgKnights  []*vigor.Animation
 	funcIndex int
 	millis    int
 }
@@ -77,7 +80,7 @@ func (g *Game) Update() error {
 		}
 	}
 
-	g.man.Animations[g.anim].Update()
+	g.knightAnim.Update()
 
 	return nil
 }
@@ -86,7 +89,7 @@ func (g *Game) Draw(target *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenWidth/2, screenHeight/2)
 	op.GeoM.Translate(-frameWidth/2, -frameHeight/2)
-	g.man.Animations[g.anim].Draw(target, op)
+	g.knightAnim.Draw(target, op)
 
 	msg := fmt.Sprintf("Ease func: %s (left/right arrows)\nDuration: %d ms (up/down arrows)",
 		GetFunctionName(easeFuncs[g.funcIndex]),
@@ -104,20 +107,38 @@ func NewGame() *Game {
 		funcIndex: 0,
 		millis:    700,
 		man:       vigor.NewResourceManager(),
-		anim:      "knight_attack1",
+		// animations: []*vigor.Animation{},
 	}
 
 	if err := g.man.LoadConfig("assets/config.json"); err != nil {
 		panic(err)
 	}
 
-	g.man.Animations[g.anim].Run()
+	a, err := vigor.NewAnimation(g.man.AnimationTemplates["knight_attack1"])
+	if err != nil {
+		panic(err)
+	}
+	g.knightAnim = a
+
+	g.knightAnim.Run()
+
+	// for i := 0; i < 5; i++ {
+	// 	a, err := vigor.NewAnimation(g.man.AnimationTemplates["knight_attack1"])
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	g.animations = append(g.animations, a)
+	// }
+
+	// for _, anim := range g.animations {
+	// 	anim.Run()
+	// }
 
 	return g
 }
 
 func (g *Game) applySettings() {
-	a := g.man.Animations[g.anim]
+	a := g.knightAnim
 	a.SetDuration(time.Duration(g.millis) * time.Millisecond)
 	a.SetTweenFunc(easeFuncs[g.funcIndex])
 }

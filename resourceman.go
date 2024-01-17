@@ -18,25 +18,24 @@ type ResourceManager struct {
 	// TODO: audio
 	// TODO: others
 
-	Sections   map[string]Section
-	Animations map[string]*Animation
+	Sections           map[string]Section
+	AnimationTemplates map[string]*AnimationTemplate
 }
 
 func NewResourceManager() ResourceManager {
 	r := ResourceManager{
-		Images:     map[string]*ebiten.Image{},
-		Sections:   map[string]Section{},
-		Animations: map[string]*Animation{},
+		Images:             map[string]*ebiten.Image{},
+		Sections:           map[string]Section{},
+		AnimationTemplates: map[string]*AnimationTemplate{},
 	}
 	return r
 }
 
 func (r *ResourceManager) LoadConfig(fname string) error {
-	cfg, err := loadData[ResourceConfig](fname)
+	cfg, err := loadConfigData[ResourceConfig](fname)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%+v\n", cfg)
 
 	// TODO: use data paths from resource dir of project.
 	// e.g. images/bla.png with resources at ROOT/resources will
@@ -70,32 +69,32 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 	}
 
 	// Load animation templates.
-	for animName, animation := range cfg.Animations {
+	for animName, template := range cfg.Animations {
 		// Check if image exists in loaded assets.
-		imgName := animation.ImageName
+		imgName := template.ImageName
 		img, ok := r.Images[imgName]
 		if !ok {
 			return fmt.Errorf("%w: %s", ErrImageNotLoaded, imgName)
 		}
 
-		f, ok := easeFuncMappings[animation.EaseFunc]
+		f, ok := easeFuncMappings[template.EaseFunc]
 		if !ok {
-			return fmt.Errorf("%w: %s", ErrUnknownEaseFunc, animation.EaseFunc)
+			return fmt.Errorf("%w: %s", ErrUnknownEaseFunc, template.EaseFunc)
 		}
-		a, err := NewAnimation(
+		a, err := NewAnimationTemplate(
 			img,
-			r.Sections[animation.SectionName],
-			animation.Width,
-			animation.Height,
-			animation.Frames,
-			time.Duration(animation.DurationMS*int(time.Millisecond)),
-			animation.Loops,
+			r.Sections[template.SectionName],
+			template.Width,
+			template.Height,
+			template.Frames,
+			time.Duration(template.DurationMS*int(time.Millisecond)),
+			template.Loops,
 			f,
 		)
 		if err != nil {
 			return err
 		}
-		r.Animations[animName] = a
+		r.AnimationTemplates[animName] = a
 	}
 
 	return nil
