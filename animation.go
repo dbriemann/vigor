@@ -190,7 +190,11 @@ func (a *Animation) SetDuration(dur time.Duration) {
 }
 
 func (a *Animation) SetTweenFunc(f ease.TweenFunc) {
-	a.CurrentFrame = 0
-	a.LastFrame = 0
-	a.Tween = *gween.New(0, float32(len(a.Frames)-1), float32(a.Duration.Seconds()), f)
+	a.EaseFunc = f
+}
+
+func (a *Animation) UpdateTween() {
+	// a.CurrentFrame = 0
+	// a.LastFrame = 0
+	a.Tween = *gween.New(0, float32(len(a.Frames)-1), float32(a.Duration.Seconds()), a.EaseFunc)
 }

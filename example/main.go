@@ -1,5 +1,9 @@
 package main
 
+// The awesome knight sprite is taken from here:
+// https://aamatniekss.itch.io/fantasy-knight-free-pixelart-animated-character
+// Go checkout the artist's pixel work.
+
 import (
 	_ "embed"
 	"fmt"
@@ -22,6 +26,8 @@ const (
 	screenHeight = 240
 	frameWidth   = 120
 	frameHeight  = 80
+
+	bgKnightsCount = 10
 )
 
 func GetFunctionName(i interface{}) string {
@@ -30,10 +36,6 @@ func GetFunctionName(i interface{}) string {
 }
 
 var (
-	// The awesome sprite is taken from here:
-	// https://aamatniekss.itch.io/fantasy-knight-free-pixelart-animated-character
-	// Go checkout the artist's pixel work.
-
 	easeFuncs = []ease.TweenFunc{
 		ease.Linear,
 		ease.InQuad, ease.OutQuad, ease.InOutQuad, ease.OutInQuad,
@@ -52,7 +54,7 @@ var (
 type Game struct {
 	man        vigor.ResourceManager
 	knightAnim *vigor.Animation
-	// TODO: background knights using same animation template.
+	bgKnights  []*vigor.Animation
 	// TODO: count draw calls with ebiten debug capabilities.
 	// bgKnights  []*vigor.Animation
 	funcIndex int
@@ -81,6 +83,9 @@ func (g *Game) Update() error {
 	}
 
 	g.knightAnim.Update()
+	for i := 0; i < bgKnightsCount; i++ {
+		g.bgKnights[i].Update()
+	}
 
 	return nil
 }
@@ -90,6 +95,13 @@ func (g *Game) Draw(target *ebiten.Image) {
 	op.GeoM.Translate(screenWidth/2, screenHeight/2)
 	op.GeoM.Translate(-frameWidth/2, -frameHeight/2)
 	g.knightAnim.Draw(target, op)
+
+	for i := 0; i < bgKnightsCount; i++ {
+		op.GeoM.Reset()
+		op.GeoM.Scale(0.3, 0.3)
+		op.GeoM.Translate(float64(screenWidth*i/bgKnightsCount), screenHeight/2+frameHeight)
+		g.bgKnights[i].Draw(target, op)
+	}
 
 	msg := fmt.Sprintf("Ease func: %s (left/right arrows)\nDuration: %d ms (up/down arrows)",
 		GetFunctionName(easeFuncs[g.funcIndex]),
@@ -107,7 +119,7 @@ func NewGame() *Game {
 		funcIndex: 0,
 		millis:    700,
 		man:       vigor.NewResourceManager(),
-		// animations: []*vigor.Animation{},
+		bgKnights: make([]*vigor.Animation, bgKnightsCount),
 	}
 
 	if err := g.man.LoadConfig("assets/config.json"); err != nil {
@@ -122,17 +134,15 @@ func NewGame() *Game {
 
 	g.knightAnim.Run()
 
-	// for i := 0; i < 5; i++ {
-	// 	a, err := vigor.NewAnimation(g.man.AnimationTemplates["knight_attack1"])
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	g.animations = append(g.animations, a)
-	// }
-
-	// for _, anim := range g.animations {
-	// 	anim.Run()
-	// }
+	for i := 0; i < bgKnightsCount; i++ {
+		a, err := vigor.NewAnimation(g.man.AnimationTemplates["knight_attack1"])
+		if err != nil {
+			panic(err)
+		}
+		g.bgKnights[i] = a
+		g.bgKnights[i].SetDuration(time.Millisecond * time.Duration(500+i*100))
+		g.bgKnights[i].Run()
+	}
 
 	return g
 }
@@ -141,6 +151,7 @@ func (g *Game) applySettings() {
 	a := g.knightAnim
 	a.SetDuration(time.Duration(g.millis) * time.Millisecond)
 	a.SetTweenFunc(easeFuncs[g.funcIndex])
+	a.UpdateTween()
 }
 
 func main() {
