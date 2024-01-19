@@ -55,10 +55,8 @@ type Game struct {
 	man        vigor.ResourceManager
 	knightAnim *vigor.Animation
 	bgKnights  []*vigor.Animation
-	// TODO: count draw calls with ebiten debug capabilities.
-	// bgKnights  []*vigor.Animation
-	funcIndex int
-	millis    int
+	funcIndex  int
+	millis     int
 }
 
 func (g *Game) Update() error {

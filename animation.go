@@ -11,7 +11,9 @@ import (
 	"github.com/tanema/gween/ease"
 )
 
-// TODO: add callbacks to update, draw, etc.
+// TODO: add callbacks?
+// after update, draw, loop?
+// see what is needed first.
 
 var (
 	ErrColumnMismatch     = fmt.Errorf("columns do not match with frame width and padding")

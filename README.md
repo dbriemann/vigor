@@ -1,10 +1,8 @@
 # vigor
 
-An extension library for ebiten, featuring:
+A framework extending ebitengine which more batteries:
 
-- json configuration for resources,
-- a resource management system,
-- spritesheet and animation utils,
-- ...?
-
+- a resouce management system including json serialization,
+- spritesheet and animation utilities,
+- ... WIP
 

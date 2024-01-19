@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"path"
 	"time"
 
 	_ "image/jpeg"
@@ -37,15 +38,11 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 		return err
 	}
 
-	// TODO: use data paths from resource dir of project.
-	// e.g. images/bla.png with resources at ROOT/resources will
-	// translate to ROOT/resources/images/bla.png and use this as name.
-
 	r.RootPath = cfg.ResourceRoot
 
 	// Load images.
-	for path, name := range cfg.Images {
-		f, err := os.Open(r.RootPath + path) // TODO: join
+	for relPath, name := range cfg.Images {
+		f, err := os.Open(path.Join(r.RootPath, relPath))
 		if err != nil {
 			return err
 		}
