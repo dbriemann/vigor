@@ -74,6 +74,9 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 			return fmt.Errorf("%w: %s", ErrImageNotLoaded, imgName)
 		}
 
+		if template.EaseFunc == "" {
+			template.EaseFunc = "Linear"
+		}
 		f, ok := easeFuncMappings[template.EaseFunc]
 		if !ok {
 			return fmt.Errorf("%w: %s", ErrUnknownEaseFunc, template.EaseFunc)

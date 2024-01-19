@@ -11,6 +11,9 @@ import (
 	"github.com/tanema/gween/ease"
 )
 
+// TODO: animations should be defined in FPS not duration.
+// TODO: what if sprites have different animations / non-animations?
+
 // TODO: add callbacks?
 // after update, draw, loop?
 // see what is needed first.
@@ -26,6 +29,7 @@ var (
 	ErrUnknownAnimation   = fmt.Errorf("unknown animation")
 	ErrFileNotFound       = fmt.Errorf("file not found")
 	ErrImageNotLoaded     = fmt.Errorf("image not loaded")
+	ErrTemplateNotFound   = fmt.Errorf("template not found")
 )
 
 type Section struct {
@@ -127,9 +131,12 @@ type Animation struct {
 }
 
 func NewAnimation(template *AnimationTemplate) (*Animation, error) {
+	if template == nil {
+		return nil, ErrTemplateNotFound
+	}
 	a := &Animation{
-		CurrentFrame:      0,
-		LastFrame:         0,
+		CurrentFrame:      template.Frames[0],
+		LastFrame:         template.Frames[0],
 		Paused:            true,
 		AnimationTemplate: template,
 	}
@@ -146,8 +153,8 @@ func (a *Animation) Run() {
 
 // Reset set the animation to frame zero, keeps running/paused state as is.
 func (a *Animation) Reset() {
-	a.CurrentFrame = 0
-	a.LastFrame = 0
+	a.CurrentFrame = a.Frames[0]
+	a.LastFrame = a.CurrentFrame
 	a.Tween.Reset()
 }
 
