@@ -1,0 +1,42 @@
+{
+	"resourceRoot": "assets/",
+	"images": {
+		"images/dove.png": "dove_sheet"
+	},
+	"sections": {
+		"dove_section": {
+			"left": 0,
+			"top": 0,
+			"width": 24,
+			"height": 8,
+			"padding": 0
+		}
+	},
+	"animations": {
+		"dove_sail": {
+			"imageName": "dove_sheet",
+			"sectionName": "dove_section",
+			"frames": [
+				2
+			],
+			"width": 8,
+			"height": 8,
+			"loops": 0
+		},
+		"dove_flap": {
+			"imageName": "dove_sheet",
+			"sectionName": "dove_section",
+			"frames": [
+				1,
+				0,
+				1,
+				2
+			],
+			"durationMs": 550,
+			"width": 8,
+			"height": 8,
+			"easeFunc": "Linear",
+			"loops": 1
+		}
+	}
+}
