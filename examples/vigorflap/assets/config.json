@@ -1,7 +1,8 @@
 {
 	"resourceRoot": "assets/",
 	"images": {
-		"images/dove.png": "dove_sheet"
+		"images/dove.png": "dove_sheet",
+		"images/bg.png": "background"
 	},
 	"sections": {
 		"dove_section": {

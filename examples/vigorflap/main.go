@@ -4,7 +4,6 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
 	_ "image/png"
 	"log"
 
@@ -34,16 +33,6 @@ type Dove struct {
 	AnimFlap      *vigor.Animation
 }
 
-// State sail:
-// Run sail animation
-// space -> state flap
-
-// State flap:
-// Decrease Y velocity by 240
-// Run flap animation
-// space -> state flap
-// flap animation finished -> state sail
-
 func (d *Dove) Update() {
 	dt := 1.0 / float32(ebiten.TPS())
 
@@ -63,7 +52,6 @@ func (d *Dove) Update() {
 	}
 
 	if d.ActiveAnim == d.AnimFlap && d.ActiveAnim.Finished {
-		fmt.Println("flap -> sail")
 		d.ActiveAnim = d.AnimSail
 		d.ActiveAnim.Reset()
 		d.ActiveAnim.Run()
@@ -77,8 +65,9 @@ func (d *Dove) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
 }
 
 type Game struct {
-	man  vigor.ResourceManager
-	dove Dove
+	man        vigor.ResourceManager
+	background *ebiten.Image
+	dove       Dove
 }
 
 func (g *Game) Update() error {
@@ -87,8 +76,6 @@ func (g *Game) Update() error {
 			g.dove.Accel.Y = 500
 			g.dove.Vel.X = 80
 		}
-		fmt.Println("<-space")
-		fmt.Println("sail -> flap")
 		g.dove.ActiveAnim = g.dove.AnimFlap
 		g.dove.ActiveAnim.Reset()
 		g.dove.ActiveAnim.Finished = false
@@ -102,6 +89,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(target *ebiten.Image) {
+	target.DrawImage(g.background, nil)
 	op := &ebiten.DrawImageOptions{}
 	if g.dove.Flip {
 		op.GeoM.Scale(-1, 1)
@@ -130,7 +118,12 @@ func NewGame() *Game {
 		panic(err)
 	}
 
-	// TODO: what if sprites have different animations?
+	bg, ok := g.man.Images["background"]
+	if !ok {
+		panic("no background image loaded")
+	}
+	g.background = bg
+
 	a, err := vigor.NewAnimation(g.man.AnimationTemplates["dove_sail"])
 	if err != nil {
 		panic(err)
