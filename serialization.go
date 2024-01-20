@@ -30,14 +30,14 @@ type ResourceConfig struct {
 }
 
 type AnimationConfig struct {
-	ImageName   string `json:"imageName"`
-	SectionName string `json:"sectionName"`
-	Frames      []int  `json:"frames"`
-	DurationMS  int    `json:"durationMs"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	EaseFunc    string `json:"easeFunc"`
-	Loops       int    `json:"loops"`
+	ImageName   string  `json:"imageName"`
+	SectionName string  `json:"sectionName"`
+	Frames      []int   `json:"frames"`
+	Duration    float64 `json:"duration"`
+	Width       int     `json:"width"`
+	Height      int     `json:"height"`
+	EaseFunc    string  `json:"easeFunc"`
+	Looped      bool    `json:"looped"`
 }
 
 type SectionConfig struct {

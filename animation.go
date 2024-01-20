@@ -11,9 +11,6 @@ import (
 	"github.com/tanema/gween/ease"
 )
 
-// TODO: animations should be defined in FPS not duration.
-// TODO: what if sprites have different animations / non-animations?
-
 // TODO: add callbacks?
 // after update, draw, loop?
 // see what is needed first.
@@ -64,10 +61,10 @@ type AnimationTemplate struct {
 	Frames      []int
 	Duration    time.Duration
 	EaseFunc    ease.TweenFunc
-	Loops       int
+	Looped      bool
 }
 
-func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames []int, duration time.Duration, loops int, easeFunc ease.TweenFunc) (*AnimationTemplate, error) {
+func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames []int, duration time.Duration, looped bool, easeFunc ease.TweenFunc) (*AnimationTemplate, error) {
 	t := AnimationTemplate{
 		Section:     section,
 		FrameWidth:  w,
@@ -77,7 +74,7 @@ func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames
 		Sprites:     []*ebiten.Image{},
 		Duration:    duration,
 		EaseFunc:    easeFunc,
-		Loops:       loops,
+		Looped:      looped,
 	}
 
 	// Calculate frame positions relative to the sprite sheet.
@@ -124,24 +121,27 @@ func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames
 
 type Animation struct {
 	*AnimationTemplate
-	Tween        gween.Tween
-	CurrentFrame int
-	LastFrame    int
-	Paused       bool
+	Tween    *gween.Tween
+	Frame    int
+	Paused   bool
+	Finished bool
 }
 
 func NewAnimation(template *AnimationTemplate) (*Animation, error) {
 	if template == nil {
 		return nil, ErrTemplateNotFound
 	}
+	if len(template.Frames) == 0 {
+		return nil, ErrFrameCountZero
+	}
 	a := &Animation{
-		CurrentFrame:      template.Frames[0],
-		LastFrame:         template.Frames[0],
-		Paused:            true,
 		AnimationTemplate: template,
+		Frame:             template.Frames[0],
+		Paused:            true,
+		Finished:          len(template.Frames) == 1,
 	}
 
-	a.Tween = *gween.New(0, float32(len(a.Frames)-1), float32(a.Duration.Seconds()), a.EaseFunc)
+	a.UpdateTween()
 
 	return a, nil
 }
@@ -153,8 +153,7 @@ func (a *Animation) Run() {
 
 // Reset set the animation to frame zero, keeps running/paused state as is.
 func (a *Animation) Reset() {
-	a.CurrentFrame = a.Frames[0]
-	a.LastFrame = a.CurrentFrame
+	a.Frame = a.Frames[0]
 	a.Tween.Reset()
 }
 
@@ -165,37 +164,35 @@ func (a *Animation) Stop() {
 
 // Update selects the current frame to draw considering the easing function.
 func (a *Animation) Update() {
-	if a.Paused || len(a.Frames) <= 1 {
-		return
-	}
-
-	if a.Loops == 0 {
+	if a.Paused || a.Finished {
 		return
 	}
 
 	dt := 1.0 / float32(ebiten.TPS())
 	interpolation, finished := a.Tween.Update(dt)
-	a.LastFrame = a.CurrentFrame
 	frameIndex := int(math.Round(float64(interpolation)))
-	a.CurrentFrame = a.Frames[frameIndex]
-	if finished && a.Loops != 0 {
-		a.Tween.Reset()
-		if a.Loops > 0 {
-			a.Loops--
-		}
+	a.Frame = a.Frames[frameIndex]
+
+	if finished && a.Looped {
+		a.Reset()
+		return
 	}
+	a.Finished = finished
 }
 
 func (a *Animation) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	target.DrawImage(a.Sprites[a.CurrentFrame], op)
+	target.DrawImage(a.Sprites[a.Frame], op)
 }
 
 func (a *Animation) SetFrames(frames []int) {
 	a.Frames = frames
+	if len(a.Frames) == 1 {
+		a.Finished = true
+	}
 }
 
-func (a *Animation) SetDuration(dur time.Duration) {
-	a.Duration = dur
+func (a *Animation) SetDuration(duration time.Duration) {
+	a.Duration = duration
 }
 
 func (a *Animation) SetTweenFunc(f ease.TweenFunc) {
@@ -203,7 +200,5 @@ func (a *Animation) SetTweenFunc(f ease.TweenFunc) {
 }
 
 func (a *Animation) UpdateTween() {
-	// a.CurrentFrame = 0
-	// a.LastFrame = 0
-	a.Tween = *gween.New(0, float32(len(a.Frames)-1), float32(a.Duration.Seconds()), a.EaseFunc)
+	a.Tween = gween.New(0, float32(len(a.Frames)-1), float32(a.Duration.Seconds()), a.EaseFunc)
 }

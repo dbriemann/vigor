@@ -21,7 +21,7 @@
 			],
 			"width": 8,
 			"height": 8,
-			"loops": 0
+			"looped": false
 		},
 		"dove_flap": {
 			"imageName": "dove_sheet",
@@ -32,11 +32,11 @@
 				1,
 				2
 			],
-			"durationMs": 550,
+			"duration": 0.2,
 			"width": 8,
 			"height": 8,
 			"easeFunc": "Linear",
-			"loops": 1
+			"looped": false
 		}
 	}
 }

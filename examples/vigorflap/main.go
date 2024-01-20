@@ -4,6 +4,7 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
 	_ "image/png"
 	"log"
 
@@ -23,11 +24,25 @@ type XY struct {
 }
 
 type Dove struct {
-	Pos   XY
-	Vel   XY
-	Accel XY
-	Flip  bool
+	Pos           XY
+	Vel           XY
+	Accel         XY
+	Flip          bool
+	Width, Height int
+	ActiveAnim    *vigor.Animation
+	AnimSail      *vigor.Animation
+	AnimFlap      *vigor.Animation
 }
+
+// State sail:
+// Run sail animation
+// space -> state flap
+
+// State flap:
+// Decrease Y velocity by 240
+// Run flap animation
+// space -> state flap
+// flap animation finished -> state sail
 
 func (d *Dove) Update() {
 	dt := 1.0 / float32(ebiten.TPS())
@@ -38,20 +53,32 @@ func (d *Dove) Update() {
 	d.Vel.X += d.Accel.X * dt
 	d.Vel.Y += d.Accel.Y * dt
 
-	if d.Pos.X <= 0 {
+	if d.Pos.X <= 5 {
 		d.Vel.X *= -1
 		d.Flip = false
 	}
-	if d.Pos.X+8 >= screenWidth {
+	if d.Pos.X+10 >= screenWidth {
 		d.Vel.X *= -1
 		d.Flip = true
 	}
+
+	if d.ActiveAnim == d.AnimFlap && d.ActiveAnim.Finished {
+		fmt.Println("flap -> sail")
+		d.ActiveAnim = d.AnimSail
+		d.ActiveAnim.Reset()
+		d.ActiveAnim.Run()
+	}
+
+	d.ActiveAnim.Update()
+}
+
+func (d *Dove) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
+	d.ActiveAnim.Draw(target, op)
 }
 
 type Game struct {
-	man      vigor.ResourceManager
-	doveAnim *vigor.Animation
-	dove     Dove
+	man  vigor.ResourceManager
+	dove Dove
 }
 
 func (g *Game) Update() error {
@@ -60,11 +87,16 @@ func (g *Game) Update() error {
 			g.dove.Accel.Y = 500
 			g.dove.Vel.X = 80
 		}
+		fmt.Println("<-space")
+		fmt.Println("sail -> flap")
+		g.dove.ActiveAnim = g.dove.AnimFlap
+		g.dove.ActiveAnim.Reset()
+		g.dove.ActiveAnim.Finished = false
+		g.dove.ActiveAnim.Run()
 		g.dove.Vel.Y = -240
 	}
 
 	g.dove.Update()
-	g.doveAnim.Update()
 
 	return nil
 }
@@ -73,10 +105,10 @@ func (g *Game) Draw(target *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	if g.dove.Flip {
 		op.GeoM.Scale(-1, 1)
-		op.GeoM.Translate(float64(g.doveAnim.FrameWidth), 0)
+		op.GeoM.Translate(float64(g.dove.Width), 0)
 	}
 	op.GeoM.Translate(float64(g.dove.Pos.X), float64(g.dove.Pos.Y))
-	g.doveAnim.Draw(target, op)
+	g.dove.Draw(target, op)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -103,9 +135,16 @@ func NewGame() *Game {
 	if err != nil {
 		panic(err)
 	}
-	g.doveAnim = a
+	g.dove.AnimSail = a
 
-	g.doveAnim.Run()
+	a, err = vigor.NewAnimation(g.man.AnimationTemplates["dove_flap"])
+	if err != nil {
+		panic(err)
+	}
+	g.dove.AnimFlap = a
+
+	g.dove.ActiveAnim = g.dove.AnimSail
+	g.dove.ActiveAnim.Run()
 
 	return g
 }

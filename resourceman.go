@@ -40,7 +40,6 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 
 	r.RootPath = cfg.ResourceRoot
 
-	// Load images.
 	for relPath, name := range cfg.Images {
 		f, err := os.Open(path.Join(r.RootPath, relPath))
 		if err != nil {
@@ -60,14 +59,11 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 	// TODO: audio
 	// TODO: others
 
-	// Init sections.
 	for name, sec := range cfg.Sections {
 		r.Sections[name] = NewSection(sec.Left, sec.Top, sec.Width, sec.Height, sec.Padding)
 	}
 
-	// Load animation templates.
 	for animName, template := range cfg.Animations {
-		// Check if image exists in loaded assets.
 		imgName := template.ImageName
 		img, ok := r.Images[imgName]
 		if !ok {
@@ -87,8 +83,8 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 			template.Width,
 			template.Height,
 			template.Frames,
-			time.Duration(template.DurationMS*int(time.Millisecond)),
-			template.Loops,
+			time.Duration(template.Duration*float64(time.Second)),
+			template.Looped,
 			f,
 		)
 		if err != nil {

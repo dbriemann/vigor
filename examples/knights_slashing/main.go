@@ -56,16 +56,17 @@ type Game struct {
 	knightAnim *vigor.Animation
 	bgKnights  []*vigor.Animation
 	funcIndex  int
-	millis     int
+	dur        time.Duration
+	// millis     int
 }
 
 func (g *Game) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
-		g.millis += 100
+		g.dur += 100 * time.Millisecond
 		g.applySettings()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
-		if g.millis >= 200 {
-			g.millis -= 100
+		if g.dur >= 200*time.Millisecond {
+			g.dur -= 100 * time.Millisecond
 			g.applySettings()
 		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
@@ -101,9 +102,9 @@ func (g *Game) Draw(target *ebiten.Image) {
 		g.bgKnights[i].Draw(target, op)
 	}
 
-	msg := fmt.Sprintf("Ease func: %s (left/right arrows)\nDuration: %d ms (up/down arrows)",
+	msg := fmt.Sprintf("Ease func: %s (left/right arrows)\nDuration: %s (up/down arrows)",
 		GetFunctionName(easeFuncs[g.funcIndex]),
-		g.millis,
+		g.dur,
 	)
 	ebitenutil.DebugPrint(target, msg)
 }
@@ -115,7 +116,6 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func NewGame() *Game {
 	g := &Game{
 		funcIndex: 0,
-		millis:    700,
 		man:       vigor.NewResourceManager(),
 		bgKnights: make([]*vigor.Animation, bgKnightsCount),
 	}
@@ -129,6 +129,8 @@ func NewGame() *Game {
 		panic(err)
 	}
 	g.knightAnim = a
+
+	g.dur = g.knightAnim.Duration
 
 	g.knightAnim.Run()
 
@@ -147,7 +149,7 @@ func NewGame() *Game {
 
 func (g *Game) applySettings() {
 	a := g.knightAnim
-	a.SetDuration(time.Duration(g.millis) * time.Millisecond)
+	a.SetDuration(g.dur)
 	a.SetTweenFunc(easeFuncs[g.funcIndex])
 	a.UpdateTween()
 }

@@ -28,11 +28,11 @@
 				8,
 				9
 			],
-			"durationMs": 700,
+			"duration": 0.7,
 			"width": 120,
 			"height": 80,
 			"easeFunc": "Linear",
-			"loops": -1
+			"looped": true
 		}
 	}
 }
