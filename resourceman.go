@@ -95,3 +95,11 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 
 	return nil
 }
+
+func (r *ResourceManager) GetImageOrPanic(name string) *ebiten.Image {
+	img, ok := r.Images[name]
+	if !ok {
+		panic(fmt.Sprintf("could not load image %s, does not exist", name))
+	}
+	return img
+}

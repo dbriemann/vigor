@@ -11,6 +11,7 @@ A framework extending ebitengine which more batteries:
 - TODO: localization
 - TODO: cutscenes
 - TODO: state management
+- TODO: tweening
 - ... ??? -> WIP
 
 

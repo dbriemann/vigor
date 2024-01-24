@@ -3,7 +3,8 @@
 	"images": {
 		"images/dove.png": "dove_sheet",
 		"images/bg.png": "background",
-		"images/spike.png": "spikes"
+		"images/spike.png": "spikes",
+		"images/paddle.png": "paddle"
 	},
 	"sections": {
 		"dove_section": {
