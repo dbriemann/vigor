@@ -49,6 +49,8 @@ var (
 		ease.InBounce, ease.OutBounce, ease.InOutBounce, ease.OutInBounce,
 		ease.InElastic, ease.OutElastic, ease.InOutElastic, ease.OutInElastic,
 	}
+
+	dt = 1.0 / float32(ebiten.TPS())
 )
 
 type Game struct {
@@ -81,9 +83,9 @@ func (g *Game) Update() error {
 		}
 	}
 
-	g.knightAnim.Update()
+	g.knightAnim.Update(dt)
 	for i := 0; i < bgKnightsCount; i++ {
-		g.bgKnights[i].Update()
+		g.bgKnights[i].Update(dt)
 	}
 
 	return nil

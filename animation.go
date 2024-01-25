@@ -163,12 +163,11 @@ func (a *Animation) Stop() {
 }
 
 // Update selects the current frame to draw considering the easing function.
-func (a *Animation) Update() {
+func (a *Animation) Update(dt float32) {
 	if a.Paused || a.Finished {
 		return
 	}
 
-	dt := 1.0 / float32(ebiten.TPS())
 	interpolation, finished := a.Tween.Update(dt)
 	frameIndex := int(math.Round(float64(interpolation)))
 	a.Frame = a.Frames[frameIndex]

@@ -2,6 +2,8 @@
 
 A framework extending ebitengine which more batteries:
 
+## Possible topics for implementation
+
 - a resouce management system including json serialization,
 - spritesheet and animation utilities,
 - TODO: collision
@@ -12,6 +14,8 @@ A framework extending ebitengine which more batteries:
 - TODO: cutscenes
 - TODO: state management
 - TODO: tweening
-- ... ??? -> WIP
 
+## Open questions
+
+- How to best handle `dt` in update functions. Pass in or handle implicitly inside of lib? How?
 

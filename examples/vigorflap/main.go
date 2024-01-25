@@ -60,7 +60,7 @@ func (d *Dove) Update() {
 		d.activeAnim.Run()
 	}
 
-	d.activeAnim.Update()
+	d.activeAnim.Update(dt)
 }
 
 func (d *Dove) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
@@ -68,10 +68,9 @@ func (d *Dove) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
 }
 
 type Paddle struct {
-	bbox   vigor.Rect[float32]
-	tween  *gween.Tween
-	image  *ebiten.Image
-	active bool
+	bbox  vigor.Rect[float32]
+	tween *gween.Tween
+	image *ebiten.Image
 }
 
 func (p *Paddle) PlaceRandom() {
@@ -92,10 +91,8 @@ func (p *Paddle) Update() {
 }
 
 func (p *Paddle) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	// if p.active {
 	op.GeoM.Translate(float64(p.bbox.Point.X), float64(p.bbox.Point.Y))
 	target.DrawImage(p.image, op)
-	// }
 }
 
 type Bouncer struct {
@@ -139,11 +136,12 @@ type Game struct {
 func (g *Game) Init() {
 	score = 0
 
-	off := screenHeight + 50
+	off := screenHeight + g.paddleLeft.bbox.Dim.H
+	// TODO: why is setting Y not enough?
 	g.paddleLeft.bbox.Point.Y = float32(off)
-	g.paddleLeft.active = false
+	g.paddleLeft.tween = nil
 	g.paddleRight.bbox.Point.Y = float32(off)
-	g.paddleRight.active = false
+	g.paddleRight.tween = nil
 
 	g.dove.bbox.Point.X = screenWidth / 2
 	g.dove.bbox.Point.Y = screenHeight / 2
@@ -169,17 +167,15 @@ func (g *Game) Update() error {
 		g.dove.vel.Y = -screenHeight
 	}
 
-	if vigor.Intersects[float32](g.dove.bbox, g.bouncerLeft.bbox) {
+	if g.dove.bbox.Intersects(g.bouncerLeft.bbox) {
 		g.paddleRight.PlaceRandom()
-		g.paddleRight.active = true
 		score++
 		g.dove.vel.X *= -1
 		g.dove.flip = false
 	}
 
-	if vigor.Intersects[float32](g.dove.bbox, g.bouncerRight.bbox) {
+	if g.dove.bbox.Intersects(g.bouncerRight.bbox) {
 		g.paddleLeft.PlaceRandom()
-		g.paddleLeft.active = true
 		score++
 		g.dove.vel.X *= -1
 		g.dove.flip = true
@@ -191,8 +187,8 @@ func (g *Game) Update() error {
 
 	if g.dove.bbox.Point.Y <= float32(g.spikes.Bounds().Dy()) ||
 		g.dove.bbox.Point.Y+g.dove.bbox.Dim.H >= float32(screenHeight-g.spikes.Bounds().Dy()) ||
-		vigor.Intersects[float32](g.dove.bbox, g.paddleLeft.bbox) ||
-		vigor.Intersects[float32](g.dove.bbox, g.paddleRight.bbox) {
+		g.dove.bbox.Intersects(g.paddleLeft.bbox) ||
+		g.dove.bbox.Intersects(g.paddleRight.bbox) {
 		g.Over()
 	}
 
@@ -204,11 +200,11 @@ func (g *Game) Over() {
 		highscore = score
 	}
 	score = 0
-	ly := g.paddleLeft.bbox.Point.Y
-	ry := g.paddleRight.bbox.Point.Y
+	// ly := g.paddleLeft.bbox.Point.Y
+	// ry := g.paddleRight.bbox.Point.Y
 	g.Init()
-	g.paddleLeft.tween = gween.New(ly, g.paddleLeft.bbox.Point.Y, 0.1, ease.Linear)
-	g.paddleRight.tween = gween.New(ry, g.paddleRight.bbox.Point.Y, 0.1, ease.Linear)
+	// g.paddleLeft.tween = gween.New(ly, g.paddleLeft.bbox.Point.Y, 0.1, ease.Linear)
+	// g.paddleRight.tween = gween.New(ry, g.paddleRight.bbox.Point.Y, 0.1, ease.Linear)
 }
 
 func (g *Game) Draw(target *ebiten.Image) {
