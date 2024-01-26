@@ -9,9 +9,11 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"time"
 
 	"github.com/dbriemann/vigor"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -96,28 +98,27 @@ func (p *Paddle) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
 }
 
 type Bouncer struct {
-	bbox vigor.Rect[float32]
+	imageBack  *ebiten.Image
+	imageFront *ebiten.Image
+	bbox       vigor.Rect[float32]
+	flash      *vigor.FlashEffect
 }
 
-func (b *Bouncer) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	vector.DrawFilledRect(
-		target,
-		float32(b.bbox.Point.X),
-		float32(b.bbox.Point.Y),
-		float32(b.bbox.Dim.W),
-		float32(b.bbox.Dim.H),
-		color.RGBA{53, 53, 61, 240},
-		false,
-	)
-	vector.DrawFilledRect(
-		target,
-		float32(b.bbox.Point.X+1),
-		float32(b.bbox.Point.Y+1),
-		float32(b.bbox.Dim.W-2),
-		float32(b.bbox.Dim.H-2),
-		color.RGBA{100, 106, 125, 225},
-		false,
-	)
+func (b *Bouncer) Draw(target *ebiten.Image) {
+	opBack := &ebiten.DrawImageOptions{}
+	opBack.GeoM.Translate(float64(b.bbox.Point.X), float64(b.bbox.Point.Y))
+	opFront := &ebiten.DrawImageOptions{}
+	opFront.GeoM.Translate(float64(b.bbox.Point.X+1), float64(b.bbox.Point.Y+1))
+
+	target.DrawImage(b.imageBack, opBack)
+	opFlash := &colorm.DrawImageOptions{}
+	opFlash.GeoM.Translate(float64(b.bbox.Point.X), float64(b.bbox.Point.Y))
+	b.flash.Draw(target, opFlash)
+	target.DrawImage(b.imageFront, opFront)
+}
+
+func (b *Bouncer) Update() {
+	b.flash.Update(dt)
 }
 
 type Game struct {
@@ -130,14 +131,12 @@ type Game struct {
 	paddleRight  Paddle
 	bouncerLeft  Bouncer
 	bouncerRight Bouncer
-	// TODO: sides/borders
 }
 
 func (g *Game) Init() {
 	score = 0
 
 	off := screenHeight + g.paddleLeft.bbox.Dim.H
-	// TODO: why is setting Y not enough?
 	g.paddleLeft.bbox.Point.Y = float32(off)
 	g.paddleLeft.tween = nil
 	g.paddleRight.bbox.Point.Y = float32(off)
@@ -168,6 +167,8 @@ func (g *Game) Update() error {
 	}
 
 	if g.dove.bbox.Intersects(g.bouncerLeft.bbox) {
+		g.bouncerLeft.flash.Reset()
+		g.bouncerLeft.flash.Start()
 		g.paddleRight.PlaceRandom()
 		score++
 		g.dove.vel.X *= -1
@@ -175,6 +176,8 @@ func (g *Game) Update() error {
 	}
 
 	if g.dove.bbox.Intersects(g.bouncerRight.bbox) {
+		g.bouncerRight.flash.Reset()
+		g.bouncerRight.flash.Start()
 		g.paddleLeft.PlaceRandom()
 		score++
 		g.dove.vel.X *= -1
@@ -191,6 +194,9 @@ func (g *Game) Update() error {
 		g.dove.bbox.Intersects(g.paddleRight.bbox) {
 		g.Over()
 	}
+
+	g.bouncerLeft.Update()
+	g.bouncerRight.Update()
 
 	return nil
 }
@@ -224,8 +230,8 @@ func (g *Game) Draw(target *ebiten.Image) {
 	bottomSpikesOp.GeoM.Translate(0, float64(screenHeight-g.spikes.Bounds().Dy()))
 	target.DrawImage(g.spikes, bottomSpikesOp)
 
-	g.bouncerLeft.Draw(target, nil)
-	g.bouncerRight.Draw(target, nil)
+	g.bouncerLeft.Draw(target)
+	g.bouncerRight.Draw(target)
 
 	lpadOp := &ebiten.DrawImageOptions{}
 	g.paddleLeft.Draw(target, lpadOp)
@@ -299,6 +305,35 @@ func NewGame() *Game {
 
 	g.paddleLeft.bbox.Point.X = float32(g.bouncerLeft.bbox.Dim.W + 2)
 	g.paddleRight.bbox.Point.X = screenWidth - g.paddleRight.bbox.Dim.W - float32(g.bouncerRight.bbox.Dim.W) - 2
+
+	// Create bouncer sprite
+	bouncerBackImg := ebiten.NewImage(4, int(sideBottom))
+	vector.DrawFilledRect(
+		bouncerBackImg,
+		float32(0),
+		float32(0),
+		float32(4),
+		float32(sideBottom),
+		color.RGBA{53, 53, 61, 240},
+		false,
+	)
+	bouncerFrontImg := ebiten.NewImage(4-2, int(sideBottom)-2)
+	vector.DrawFilledRect(
+		bouncerFrontImg,
+		float32(0),
+		float32(0),
+		float32(2),
+		float32(sideBottom-2),
+		color.RGBA{100, 106, 125, 225},
+		false,
+	)
+	g.bouncerLeft.imageBack = bouncerBackImg
+	g.bouncerLeft.imageFront = bouncerFrontImg
+	g.bouncerRight.imageBack = bouncerBackImg
+	g.bouncerRight.imageFront = bouncerFrontImg
+
+	g.bouncerLeft.flash = vigor.NewFlashEffect(g.bouncerLeft.imageBack, 200*time.Millisecond, ease.Linear, ease.Linear)
+	g.bouncerRight.flash = vigor.NewFlashEffect(g.bouncerRight.imageBack, 200*time.Millisecond, ease.Linear, ease.Linear)
 
 	return g
 }
