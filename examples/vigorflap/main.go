@@ -9,7 +9,6 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
-	"time"
 
 	"github.com/dbriemann/vigor"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -131,6 +130,8 @@ type Game struct {
 	paddleRight  Paddle
 	bouncerLeft  Bouncer
 	bouncerRight Bouncer
+	shake        *vigor.ShakeEffect
+	deathAnim    bool
 }
 
 func (g *Game) Init() {
@@ -151,6 +152,7 @@ func (g *Game) Init() {
 	g.dove.flip = false
 	g.dove.activeAnim = g.dove.animSail
 	g.dove.activeAnim.Run()
+	g.deathAnim = false
 }
 
 func (g *Game) Update() error {
@@ -198,48 +200,61 @@ func (g *Game) Update() error {
 	g.bouncerLeft.Update()
 	g.bouncerRight.Update()
 
+	if g.deathAnim {
+		g.dove.bbox.Point.X = 6666
+		g.deathAnim = !g.shake.Update(dt)
+		if !g.deathAnim {
+			g.Init()
+		}
+	}
+
 	return nil
 }
 
 func (g *Game) Over() {
+	if g.deathAnim {
+		return
+	}
+
 	if score > highscore {
 		highscore = score
 	}
+
+	g.shake.Reset()
+	g.shake.Start()
+	g.deathAnim = true
+
 	score = 0
-	// ly := g.paddleLeft.bbox.Point.Y
-	// ry := g.paddleRight.bbox.Point.Y
-	g.Init()
-	// g.paddleLeft.tween = gween.New(ly, g.paddleLeft.bbox.Point.Y, 0.1, ease.Linear)
-	// g.paddleRight.tween = gween.New(ry, g.paddleRight.bbox.Point.Y, 0.1, ease.Linear)
 }
 
 func (g *Game) Draw(target *ebiten.Image) {
-	target.DrawImage(g.background, nil)
+	scene := ebiten.NewImage(target.Bounds().Dx(), target.Bounds().Dy())
+	scene.DrawImage(g.background, nil)
 
-	ebitenutil.DebugPrintAt(target, strconv.Itoa(score), screenWidth/2-5, screenHeight-50)
+	ebitenutil.DebugPrintAt(scene, strconv.Itoa(score), screenWidth/2-5, screenHeight-50)
 	if highscore > 0 {
-		ebitenutil.DebugPrintAt(target, "high: "+strconv.Itoa(highscore), screenWidth/2-20, 50)
+		ebitenutil.DebugPrintAt(scene, "high: "+strconv.Itoa(highscore), screenWidth/2-20, 50)
 	}
 
 	topSpikesOp := &ebiten.DrawImageOptions{}
 	topSpikesOp.GeoM.Scale(1, -1)
 	topSpikesOp.GeoM.Translate(0, float64(g.spikes.Bounds().Dy()))
-	target.DrawImage(g.spikes, topSpikesOp)
+	scene.DrawImage(g.spikes, topSpikesOp)
 
 	bottomSpikesOp := &ebiten.DrawImageOptions{}
 	bottomSpikesOp.GeoM.Translate(0, float64(screenHeight-g.spikes.Bounds().Dy()))
-	target.DrawImage(g.spikes, bottomSpikesOp)
+	scene.DrawImage(g.spikes, bottomSpikesOp)
 
-	g.bouncerLeft.Draw(target)
-	g.bouncerRight.Draw(target)
+	g.bouncerLeft.Draw(scene)
+	g.bouncerRight.Draw(scene)
 
 	lpadOp := &ebiten.DrawImageOptions{}
-	g.paddleLeft.Draw(target, lpadOp)
+	g.paddleLeft.Draw(scene, lpadOp)
 
 	rpadOp := &ebiten.DrawImageOptions{}
 	rpadOp.GeoM.Scale(-1, 1)
 	rpadOp.GeoM.Translate(float64(g.paddleRight.bbox.Dim.W), 0)
-	g.paddleRight.Draw(target, rpadOp)
+	g.paddleRight.Draw(scene, rpadOp)
 
 	doveOp := &ebiten.DrawImageOptions{}
 	if g.dove.flip {
@@ -247,7 +262,11 @@ func (g *Game) Draw(target *ebiten.Image) {
 		doveOp.GeoM.Translate(float64(g.dove.bbox.Dim.W), 0)
 	}
 	doveOp.GeoM.Translate(float64(g.dove.bbox.Point.X), float64(g.dove.bbox.Point.Y))
-	g.dove.Draw(target, doveOp)
+	g.dove.Draw(scene, doveOp)
+
+	sceneOp := &ebiten.DrawImageOptions{}
+	g.shake.Apply(sceneOp)
+	target.DrawImage(scene, sceneOp)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -256,7 +275,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func NewGame() *Game {
 	g := &Game{
-		man: vigor.NewResourceManager(),
+		man:       vigor.NewResourceManager(),
+		shake:     vigor.NewShakeEffect(0.5, 8, 8),
+		deathAnim: false,
 	}
 
 	if err := g.man.LoadConfig("assets/config.json"); err != nil {
@@ -332,8 +353,8 @@ func NewGame() *Game {
 	g.bouncerRight.imageBack = bouncerBackImg
 	g.bouncerRight.imageFront = bouncerFrontImg
 
-	g.bouncerLeft.flash = vigor.NewFlashEffect(g.bouncerLeft.imageBack, 200*time.Millisecond, ease.Linear, ease.Linear)
-	g.bouncerRight.flash = vigor.NewFlashEffect(g.bouncerRight.imageBack, 200*time.Millisecond, ease.Linear, ease.Linear)
+	g.bouncerLeft.flash = vigor.NewFlashEffect(g.bouncerLeft.imageBack, 0.2, ease.Linear, ease.Linear)
+	g.bouncerRight.flash = vigor.NewFlashEffect(g.bouncerRight.imageBack, 0.2, ease.Linear, ease.Linear)
 
 	return g
 }

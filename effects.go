@@ -2,13 +2,77 @@ package vigor
 
 import (
 	"image/color"
-	"time"
+	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/tanema/gween"
 	"github.com/tanema/gween/ease"
 )
+
+// TODO: somehow unify effect usage
+
+type ShakeEffect struct {
+	magnitudeX float32
+	magnitudeY float32
+	displaceX  float32
+	displaceY  float32
+	duration   float32
+	runtime    float32
+	running    bool
+}
+
+func NewShakeEffect(duration, magX, magY float32) *ShakeEffect {
+	e := &ShakeEffect{
+		duration:   duration,
+		runtime:    0,
+		magnitudeX: magX,
+		magnitudeY: magY,
+		running:    false,
+	}
+
+	return e
+}
+
+func (e *ShakeEffect) Update(dt float32) bool {
+	if !e.running {
+		return false
+	}
+
+	e.displaceX = rand.Float32()*e.magnitudeX - e.magnitudeX/2
+	e.displaceY = rand.Float32()*e.magnitudeY - e.magnitudeY/2
+
+	e.runtime += dt
+
+	if e.runtime >= e.duration {
+		e.runtime = e.duration
+		e.running = false
+	}
+
+	return !e.running
+}
+
+// TODO: probably should be Draw() to have unique interface for all effects.
+func (e *ShakeEffect) Apply(op *ebiten.DrawImageOptions) {
+	if !e.running {
+		return
+	}
+	op.GeoM.Translate(float64(e.displaceX), float64(e.displaceY))
+}
+
+func (e *ShakeEffect) Reset() {
+	e.runtime = 0
+	e.running = false
+	e.Stop()
+}
+
+func (e *ShakeEffect) Start() {
+	e.running = true
+}
+
+func (e *ShakeEffect) Stop() {
+	e.running = false
+}
 
 type FlashEffect struct {
 	overlay  *ebiten.Image
@@ -18,14 +82,14 @@ type FlashEffect struct {
 	running  bool
 }
 
-func NewFlashEffect(target *ebiten.Image, duration time.Duration, in, out ease.TweenFunc) *FlashEffect {
+func NewFlashEffect(image *ebiten.Image, duration float32, in, out ease.TweenFunc) *FlashEffect {
 	e := &FlashEffect{
-		overlay:  ebiten.NewImage(target.Bounds().Dx(), target.Bounds().Dy()),
+		overlay:  ebiten.NewImage(image.Bounds().Dx(), image.Bounds().Dy()),
 		finished: false,
 		running:  false,
 		tweenSeq: gween.NewSequence(
-			gween.New(0, 1, float32(duration.Seconds())/2, in),
-			gween.New(1, 0, float32(duration.Seconds())/2, in),
+			gween.New(0, 1, duration/2, in),
+			gween.New(1, 0, duration/2, in),
 		),
 	}
 	e.overlay.Fill(color.White)
@@ -37,6 +101,10 @@ func (e *FlashEffect) Update(dt float32) bool {
 	if !e.running {
 		return false
 	}
+	if e.finished {
+		return true
+	}
+
 	val, _, finished := e.tweenSeq.Update(dt)
 	e.value = val
 	e.finished = finished
