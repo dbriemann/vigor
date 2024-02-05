@@ -33,15 +33,10 @@ var (
 	sideBottom float32 = 0
 )
 
-type XY struct {
-	X float32
-	Y float32
-}
-
 type Dove struct {
 	bbox       vigor.Rect[float32]
-	vel        XY
-	accel      XY
+	vel        vigor.Vec2[float32]
+	accel      vigor.Vec2[float32]
 	flip       bool
 	activeAnim *vigor.Animation
 	animSail   *vigor.Animation
@@ -75,7 +70,7 @@ type Paddle struct {
 }
 
 func (p *Paddle) PlaceRandom() {
-	r := rand.Intn(int(sideBottom-sideTop-p.bbox.Dim.H)) + int(sideTop)
+	r := rand.Intn(int(sideBottom-sideTop-p.bbox.Dim.Y)) + int(sideTop)
 	p.tween = gween.New(p.bbox.Point.Y, float32(r), 0.2, ease.Linear)
 }
 
@@ -137,7 +132,7 @@ type Game struct {
 func (g *Game) Init() {
 	score = 0
 
-	off := screenHeight + g.paddleLeft.bbox.Dim.H
+	off := screenHeight + g.paddleLeft.bbox.Dim.Y
 	g.paddleLeft.bbox.Point.Y = float32(off)
 	g.paddleLeft.tween = nil
 	g.paddleRight.bbox.Point.Y = float32(off)
@@ -191,7 +186,7 @@ func (g *Game) Update() error {
 	g.dove.Update()
 
 	if g.dove.bbox.Point.Y <= float32(g.spikes.Bounds().Dy()) ||
-		g.dove.bbox.Point.Y+g.dove.bbox.Dim.H >= float32(screenHeight-g.spikes.Bounds().Dy()) ||
+		g.dove.bbox.Point.Y+g.dove.bbox.Dim.Y >= float32(screenHeight-g.spikes.Bounds().Dy()) ||
 		g.dove.bbox.Intersects(g.paddleLeft.bbox) ||
 		g.dove.bbox.Intersects(g.paddleRight.bbox) {
 		g.Over()
@@ -253,13 +248,13 @@ func (g *Game) Draw(target *ebiten.Image) {
 
 	rpadOp := &ebiten.DrawImageOptions{}
 	rpadOp.GeoM.Scale(-1, 1)
-	rpadOp.GeoM.Translate(float64(g.paddleRight.bbox.Dim.W), 0)
+	rpadOp.GeoM.Translate(float64(g.paddleRight.bbox.Dim.X), 0)
 	g.paddleRight.Draw(scene, rpadOp)
 
 	doveOp := &ebiten.DrawImageOptions{}
 	if g.dove.flip {
 		doveOp.GeoM.Scale(-1, 1)
-		doveOp.GeoM.Translate(float64(g.dove.bbox.Dim.W), 0)
+		doveOp.GeoM.Translate(float64(g.dove.bbox.Dim.X), 0)
 	}
 	doveOp.GeoM.Translate(float64(g.dove.bbox.Point.X), float64(g.dove.bbox.Point.Y))
 	g.dove.Draw(scene, doveOp)
@@ -302,30 +297,30 @@ func NewGame() *Game {
 
 	g.paddleLeft.image = g.paddle
 	g.paddleRight.image = g.paddle
-	g.paddleLeft.bbox.Dim.W = float32(g.paddle.Bounds().Dx())
-	g.paddleLeft.bbox.Dim.H = float32(g.paddle.Bounds().Dy())
-	g.paddleRight.bbox.Dim.W = float32(g.paddle.Bounds().Dx())
-	g.paddleRight.bbox.Dim.H = float32(g.paddle.Bounds().Dy())
+	g.paddleLeft.bbox.Dim.X = float32(g.paddle.Bounds().Dx())
+	g.paddleLeft.bbox.Dim.Y = float32(g.paddle.Bounds().Dy())
+	g.paddleRight.bbox.Dim.X = float32(g.paddle.Bounds().Dx())
+	g.paddleRight.bbox.Dim.Y = float32(g.paddle.Bounds().Dy())
 
 	g.Init()
-	g.dove.bbox.Dim.W = float32(g.dove.activeAnim.FrameWidth)
-	g.dove.bbox.Dim.H = float32(g.dove.activeAnim.FrameHeight)
+	g.dove.bbox.Dim.X = float32(g.dove.activeAnim.FrameWidth)
+	g.dove.bbox.Dim.Y = float32(g.dove.activeAnim.FrameHeight)
 
 	sideTop = float32(g.spikes.Bounds().Dy() + 2)
 	sideBottom = float32(screenHeight - 2*g.spikes.Bounds().Dy() - 4)
 
-	g.bouncerLeft.bbox.Dim.W = 4
+	g.bouncerLeft.bbox.Dim.X = 4
 	g.bouncerLeft.bbox.Point.X = 1
 	g.bouncerLeft.bbox.Point.Y = sideTop
-	g.bouncerLeft.bbox.Dim.H = sideBottom
+	g.bouncerLeft.bbox.Dim.Y = sideBottom
 
-	g.bouncerRight.bbox.Dim.W = 4
-	g.bouncerRight.bbox.Point.X = screenWidth - g.bouncerRight.bbox.Dim.W - 1
+	g.bouncerRight.bbox.Dim.X = 4
+	g.bouncerRight.bbox.Point.X = screenWidth - g.bouncerRight.bbox.Dim.X - 1
 	g.bouncerRight.bbox.Point.Y = sideTop
-	g.bouncerRight.bbox.Dim.H = sideBottom
+	g.bouncerRight.bbox.Dim.Y = sideBottom
 
-	g.paddleLeft.bbox.Point.X = float32(g.bouncerLeft.bbox.Dim.W + 2)
-	g.paddleRight.bbox.Point.X = screenWidth - g.paddleRight.bbox.Dim.W - float32(g.bouncerRight.bbox.Dim.W) - 2
+	g.paddleLeft.bbox.Point.X = float32(g.bouncerLeft.bbox.Dim.X + 2)
+	g.paddleRight.bbox.Point.X = screenWidth - g.paddleRight.bbox.Dim.X - float32(g.bouncerRight.bbox.Dim.X) - 2
 
 	// Create bouncer sprite
 	bouncerBackImg := ebiten.NewImage(4, int(sideBottom))

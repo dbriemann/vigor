@@ -20,3 +20,15 @@ A framework extending ebitengine which more batteries:
 
 - How to best handle `dt` in update functions. Pass in or handle implicitly inside of lib? How?
 
+## Architecture
+
+### Entities 
+
+- Game: a wrapper for ebiten Game 
+- State
+- Stage
+- Scene
+- Camera
+- Sprite
+- Group
+
