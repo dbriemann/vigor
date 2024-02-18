@@ -1,13 +1,29 @@
 package vigor
 
 var (
-	igame internalGame
+	// TODO: think about thread safety
+	G glob
 )
 
-func Dt() float32 {
-	return igame.dt
+type glob struct {
+	inGame internalGame
+	exGame Game
+
+	tps uint32
+	dt  float32
 }
 
-func TPS() uint32 {
-	return igame.tps
+func (g *glob) Dt() float32 {
+	return g.dt
+}
+
+func (g *glob) TPS() uint32 {
+	return g.tps
+}
+
+func (g *glob) SetTPS(tps uint32) {
+	if g.tps >= 1 {
+		g.tps = tps
+		g.dt = 1.0 / float32(tps)
+	}
 }
