@@ -11,7 +11,7 @@ type Sprite struct {
 	animation *Animation
 }
 
-func NewSprite() *Sprite {
+func NewSprite(imageName string) *Sprite {
 	s := &Sprite{}
 
 	return s

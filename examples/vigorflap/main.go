@@ -116,7 +116,7 @@ func (b *Bouncer) Update() {
 }
 
 type Game struct {
-	man          vigor.ResourceManager
+	man          vigor.AssetManager
 	background   *ebiten.Image
 	dove         Dove
 	spikes       *ebiten.Image
@@ -270,7 +270,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func NewGame() *Game {
 	g := &Game{
-		man:       vigor.NewResourceManager(),
+		man:       vigor.NewAssetManager(),
 		shake:     vigor.NewShakeEffect(0.5, 8, 8),
 		deathAnim: false,
 	}

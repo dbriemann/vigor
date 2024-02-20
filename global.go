@@ -3,6 +3,7 @@ package vigor
 var (
 	// TODO: make glob thread safe.
 	G glob
+	// TODO: asset manager
 )
 
 type glob struct {

@@ -13,7 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type ResourceManager struct {
+type AssetManager struct {
 	RootPath string
 	Images   map[string]*ebiten.Image
 	// TODO: audio
@@ -23,8 +23,8 @@ type ResourceManager struct {
 	AnimationTemplates map[string]*AnimationTemplate
 }
 
-func NewResourceManager() ResourceManager {
-	r := ResourceManager{
+func NewAssetManager() AssetManager {
+	r := AssetManager{
 		Images:             map[string]*ebiten.Image{},
 		Sections:           map[string]Section{},
 		AnimationTemplates: map[string]*AnimationTemplate{},
@@ -32,7 +32,7 @@ func NewResourceManager() ResourceManager {
 	return r
 }
 
-func (r *ResourceManager) LoadConfig(fname string) error {
+func (r *AssetManager) LoadConfig(fname string) error {
 	cfg, err := loadConfigData[ResourceConfig](fname)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (r *ResourceManager) LoadConfig(fname string) error {
 	return nil
 }
 
-func (r *ResourceManager) GetImageOrPanic(name string) *ebiten.Image {
+func (r *AssetManager) GetImageOrPanic(name string) *ebiten.Image {
 	img, ok := r.Images[name]
 	if !ok {
 		panic(fmt.Sprintf("could not load image %s, does not exist", name))

@@ -54,7 +54,7 @@ var (
 )
 
 type Game struct {
-	man        vigor.ResourceManager
+	man        vigor.AssetManager
 	knightAnim *vigor.Animation
 	bgKnights  []*vigor.Animation
 	funcIndex  int
@@ -118,7 +118,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func NewGame() *Game {
 	g := &Game{
 		funcIndex: 0,
-		man:       vigor.NewResourceManager(),
+		man:       vigor.NewAssetManager(),
 		bgKnights: make([]*vigor.Animation, bgKnightsCount),
 	}
 
