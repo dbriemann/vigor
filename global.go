@@ -1,7 +1,7 @@
 package vigor
 
 var (
-	// TODO: think about thread safety
+	// TODO: make glob thread safe.
 	G glob
 )
 

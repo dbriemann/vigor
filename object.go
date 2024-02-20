@@ -1,5 +1,6 @@
 package vigor
 
+// Object represents any entity that has a position, updates. It can either be with or without motion.
 type Object struct {
 	pos            Vec2[float32]
 	lastPos        Vec2[float32]
@@ -9,6 +10,7 @@ type Object struct {
 	motionDisabled bool
 }
 
+// TODO: do we need the constructor at all?
 func NewObject(x, y float32, width, height uint32) (e Object) {
 	e.SetPos(x, y)
 	e.SetDim(width, height)
@@ -49,7 +51,15 @@ func (e Object) Pos() Vec2[int] {
 }
 
 func (e *Object) Update() {
+	e.pos.X = e.lastPos.X
+	e.pos.Y = e.lastPos.Y
+	// TODO: angular velocity
 
+	e.pos.X += e.vel.X * G.Dt()
+	e.pos.Y += e.vel.Y * G.Dt()
+
+	e.vel.X += e.accel.X * G.Dt()
+	e.vel.Y += e.accel.Y * G.Dt()
 }
 
 func Collides(obj1, obj2 *Object) bool {
