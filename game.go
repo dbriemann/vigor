@@ -25,9 +25,18 @@ func (g *internalGame) Layout(width, height int) (logicalWidth, logicalHeight in
 	return G.exGame.Layout(width, height)
 }
 
+func InitGame() error {
+	G.assets = NewAssetManager()
+
+	if err := G.assets.LoadConfig(configFilePath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func RunGame(g Game) error {
 	G.exGame = g
-
 	G.exGame.Init()
 
 	return ebiten.RunGame(&G.inGame)

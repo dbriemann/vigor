@@ -3,7 +3,6 @@ package vigor
 var (
 	// TODO: make glob thread safe.
 	G glob
-	// TODO: asset manager
 )
 
 type glob struct {
@@ -12,6 +11,8 @@ type glob struct {
 
 	tps uint32
 	dt  float32
+
+	assets AssetManager
 }
 
 func (g *glob) Dt() float32 {
@@ -27,4 +28,8 @@ func (g *glob) SetTPS(tps uint32) {
 		g.tps = tps
 		g.dt = 1.0 / float32(tps)
 	}
+}
+
+func SetConfigFile(cfgFilePath string) {
+	configFilePath = cfgFilePath
 }

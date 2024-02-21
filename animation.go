@@ -64,6 +64,8 @@ type AnimationTemplate struct {
 	Looped      bool
 }
 
+// TODO: simplify animations, remove sprite sheets and sections, just use images for each animation.
+
 func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames []int, duration time.Duration, looped bool, easeFunc ease.TweenFunc) (*AnimationTemplate, error) {
 	t := AnimationTemplate{
 		Section:     section,

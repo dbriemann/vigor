@@ -19,5 +19,7 @@ func (g *Game) Layout(w, h int) (int, int) {
 func main() {
 	g := Game{}
 
+	vigor.InitGame()
+
 	vigor.RunGame(&g)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// TODO: should this be private in the vigor package?
 type AssetManager struct {
 	RootPath string
 	Images   map[string]*ebiten.Image
@@ -99,7 +100,15 @@ func (r *AssetManager) LoadConfig(fname string) error {
 func (r *AssetManager) GetImageOrPanic(name string) *ebiten.Image {
 	img, ok := r.Images[name]
 	if !ok {
-		panic(fmt.Sprintf("could not load image %s, does not exist", name))
+		panic(fmt.Sprintf("could not load image %s from asset manager: does not exist", name))
 	}
 	return img
+}
+
+func (r *AssetManager) GetAnimTemplateOrPanic(name string) *AnimationTemplate {
+	templ, ok := r.AnimationTemplates[name]
+	if !ok {
+		panic(fmt.Sprintf("could not load animation template %s from asset manager: does not exist", name))
+	}
+	return templ
 }

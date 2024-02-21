@@ -51,6 +51,10 @@ func (e Object) Pos() Vec2[int] {
 }
 
 func (e *Object) Update() {
+	if e.motionDisabled {
+		return
+	}
+
 	e.pos.X = e.lastPos.X
 	e.pos.Y = e.lastPos.Y
 	// TODO: angular velocity
