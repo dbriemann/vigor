@@ -6,11 +6,11 @@ import (
 
 // Sprite represents every entity that has a position, is updated and drawn.
 type Sprite struct {
-	Object
-
 	img        *ebiten.Image
-	animated   bool
 	animations map[string]*Animation
+	animated   bool
+
+	Object
 }
 
 func NewSprite(imageName string, animNames ...string) *Sprite {
@@ -31,7 +31,6 @@ func NewSprite(imageName string, animNames ...string) *Sprite {
 }
 
 func (s *Sprite) draw(target *ebiten.Image) {
-
 }
 
 func (e *Sprite) Update() {

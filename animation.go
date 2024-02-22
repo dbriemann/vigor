@@ -53,14 +53,14 @@ func (s *Section) Bounds() image.Rectangle {
 }
 
 type AnimationTemplate struct {
+	Sheet       *ebiten.Image
+	EaseFunc    ease.TweenFunc
+	Sprites     []*ebiten.Image
+	Frames      []int
 	Section     Section
 	FrameWidth  int
 	FrameHeight int
-	Sheet       *ebiten.Image
-	Sprites     []*ebiten.Image
-	Frames      []int
 	Duration    time.Duration
-	EaseFunc    ease.TweenFunc
 	Looped      bool
 }
 

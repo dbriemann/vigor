@@ -20,23 +20,22 @@ func loadConfigData[T any](fpath string) (T, error) {
 }
 
 type ResourceConfig struct {
-	ResourceRoot string            `json:"resourceRoot"`
-	Images       map[string]string `json:"images"`
 	// TODO: audio
 	// TODO: others
-
-	Sections   map[string]SectionConfig   `json:"sections"`
-	Animations map[string]AnimationConfig `json:"animations"`
+	Images       map[string]string          `json:"images"`
+	Sections     map[string]SectionConfig   `json:"sections"`
+	Animations   map[string]AnimationConfig `json:"animations"`
+	ResourceRoot string                     `json:"resourceRoot"`
 }
 
 type AnimationConfig struct {
 	ImageName   string  `json:"imageName"`
 	SectionName string  `json:"sectionName"`
+	EaseFunc    string  `json:"easeFunc"`
 	Frames      []int   `json:"frames"`
 	Duration    float64 `json:"duration"`
 	Width       int     `json:"width"`
 	Height      int     `json:"height"`
-	EaseFunc    string  `json:"easeFunc"`
 	Looped      bool    `json:"looped"`
 }
 

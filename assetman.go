@@ -15,13 +15,10 @@ import (
 
 // TODO: should this be private in the vigor package?
 type AssetManager struct {
-	RootPath string
-	Images   map[string]*ebiten.Image
-	// TODO: audio
-	// TODO: others
-
+	Images             map[string]*ebiten.Image
 	Sections           map[string]Section
 	AnimationTemplates map[string]*AnimationTemplate
+	RootPath           string
 }
 
 func NewAssetManager() AssetManager {

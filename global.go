@@ -8,11 +8,9 @@ var (
 type glob struct {
 	inGame internalGame
 	exGame Game
-
-	tps uint32
-	dt  float32
-
 	assets AssetManager
+	tps    uint32
+	dt     float32
 }
 
 func (g *glob) Dt() float32 {
