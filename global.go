@@ -1,16 +1,15 @@
 package vigor
 
-var (
-	// TODO: make glob thread safe.
-	G glob
-)
+// TODO: make glob thread safe.
+var G glob
 
 type glob struct {
-	inGame internalGame
-	exGame Game
-	assets AssetManager
-	tps    uint32
-	dt     float32
+	internalGame internalGame
+	externalGame Game
+	assets       AssetManager
+	tps          uint32
+	dt           float32
+	idcounter    uint64
 }
 
 func (g *glob) Dt() float32 {
@@ -26,6 +25,9 @@ func (g *glob) SetTPS(tps uint32) {
 		g.tps = tps
 		g.dt = 1.0 / float32(tps)
 	}
+}
+
+func (g *glob) Add() {
 }
 
 func SetConfigFile(cfgFilePath string) {

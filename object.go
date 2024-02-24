@@ -7,16 +7,19 @@ type Object struct {
 	vel            Vec2[float32]
 	accel          Vec2[float32]
 	dim            Vec2[uint32]
+	id             uint64
 	motionDisabled bool
 }
 
-// TODO: do we need the constructor at all?
-func NewObject(x, y float32, width, height uint32) (e Object) {
-	e.SetPos(x, y)
-	e.SetDim(width, height)
+func NewObject() (e Object) {
+	G.idcounter++
+	e.id = G.idcounter
 	e.motionDisabled = true
-
 	return
+}
+
+func (e *Object) Id() uint64 {
+	return e.id
 }
 
 func (e *Object) SetPos(x, y float32) {

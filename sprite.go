@@ -4,20 +4,26 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+type Stageable interface {
+	draw(*ebiten.Image)
+
+	Id() uint64
+	Update()
+	Visible() bool
+}
+
 // Sprite represents every entity that has a position, is updated and drawn.
 type Sprite struct {
-	img        *ebiten.Image
 	animations map[string]*Animation
-	animated   bool
 
 	Object
 }
 
-func NewSprite(imageName string, animNames ...string) *Sprite {
+func NewSprite(animNames ...string) *Sprite {
 	s := &Sprite{
-		img: G.assets.GetImageOrPanic(imageName),
+		Object:     NewObject(),
+		animations: map[string]*Animation{},
 	}
-	s.animated = len(animNames) == 0
 	for _, name := range animNames {
 		anim, err := NewAnimation(G.assets.GetAnimTemplateOrPanic(name))
 		if err == nil {
@@ -37,4 +43,6 @@ func (e *Sprite) Update() {
 	e.Object.Update()
 }
 
-// TODO: continue here
+func (e *Sprite) Visible() bool {
+	return true
+}

@@ -1,38 +1,38 @@
 {
 	"resourceRoot": "assets/",
 	"images": {
-		"images/dove.png": "dove_sheet",
-		"images/bg.png": "background",
-		"images/spike.png": "spikes",
-		"images/paddle.png": "paddle"
+		"images/_AttackComboNoMovement.png": "knight_attack_sheet"
 	},
-	"sprites": {
-		"dove": {
-			"animations": {
-				"dove_sail": {
-					"imageName": "dove_sheet",
-					"frames": [
-						2
-					],
-					"width": 8,
-					"height": 8,
-					"looped": false
-				},
-				"dove_flap": {
-					"imageName": "dove_sheet",
-					"frames": [
-						1,
-						0,
-						1,
-						2
-					],
-					"duration": 0.2,
-					"width": 8,
-					"height": 8,
-					"easeFunc": "Linear",
-					"looped": false
-				}
-			}
+	"sections": {
+		"knight_attack_section": {
+			"left": 0,
+			"top": 0,
+			"width": 1200,
+			"height": 80,
+			"padding": 0
+		}
+	},
+	"animations": {
+		"knight_attack1": {
+			"imageName": "knight_attack_sheet",
+			"sectionName": "knight_attack_section",
+			"frames": [
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9
+			],
+			"duration": 0.7,
+			"width": 120,
+			"height": 80,
+			"easeFunc": "Linear",
+			"looped": true
 		}
 	}
 }

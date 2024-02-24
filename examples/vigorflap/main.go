@@ -34,13 +34,13 @@ var (
 )
 
 type Dove struct {
+	activeAnim *vigor.Animation
+	animSail   *vigor.Animation
+	animFlap   *vigor.Animation
 	bbox       vigor.Rect[float32]
 	vel        vigor.Vec2[float32]
 	accel      vigor.Vec2[float32]
 	flip       bool
-	activeAnim *vigor.Animation
-	animSail   *vigor.Animation
-	animFlap   *vigor.Animation
 }
 
 func (d *Dove) Update() {
@@ -64,9 +64,9 @@ func (d *Dove) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
 }
 
 type Paddle struct {
-	bbox  vigor.Rect[float32]
 	tween *gween.Tween
 	image *ebiten.Image
+	bbox  vigor.Rect[float32]
 }
 
 func (p *Paddle) PlaceRandom() {
@@ -94,8 +94,8 @@ func (p *Paddle) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
 type Bouncer struct {
 	imageBack  *ebiten.Image
 	imageFront *ebiten.Image
-	bbox       vigor.Rect[float32]
 	flash      *vigor.FlashEffect
+	bbox       vigor.Rect[float32]
 }
 
 func (b *Bouncer) Draw(target *ebiten.Image) {
@@ -116,16 +116,16 @@ func (b *Bouncer) Update() {
 }
 
 type Game struct {
-	man          vigor.AssetManager
 	background   *ebiten.Image
-	dove         Dove
 	spikes       *ebiten.Image
 	paddle       *ebiten.Image
+	shake        *vigor.ShakeEffect
+	man          vigor.AssetManager
+	dove         Dove
 	paddleLeft   Paddle
 	paddleRight  Paddle
 	bouncerLeft  Bouncer
 	bouncerRight Bouncer
-	shake        *vigor.ShakeEffect
 	deathAnim    bool
 }
 

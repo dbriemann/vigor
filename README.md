@@ -16,19 +16,20 @@ A framework extending ebitengine which more batteries:
 - TODO: state management
 - TODO: tweening
 
+- TODO: thread safety
+
 ## Open questions
 
 - How to best handle `dt` in update functions. Pass in or handle implicitly inside of lib? How?
 
 ## Architecture
 
-### Entities 
+### Entities
 
-- Game: a wrapper for ebiten Game 
+- Game: a wrapper for ebiten Game
 - State
 - Stage
 - Scene
 - Camera
 - Sprite
 - Group
-

@@ -153,7 +153,7 @@ func (g *Game) applySettings() {
 	a := g.knightAnim
 	a.SetDuration(g.dur)
 	a.SetTweenFunc(easeFuncs[g.funcIndex])
-	a.UpdateTween()
+	a.InitTween()
 }
 
 func main() {

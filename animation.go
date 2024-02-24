@@ -143,7 +143,7 @@ func NewAnimation(template *AnimationTemplate) (*Animation, error) {
 		Finished:          len(template.Frames) == 1,
 	}
 
-	a.UpdateTween()
+	a.InitTween()
 
 	return a, nil
 }
@@ -200,6 +200,6 @@ func (a *Animation) SetTweenFunc(f ease.TweenFunc) {
 	a.EaseFunc = f
 }
 
-func (a *Animation) UpdateTween() {
+func (a *Animation) InitTween() {
 	a.Tween = gween.New(0, float32(len(a.Frames)-1), float32(a.Duration.Seconds()), a.EaseFunc)
 }

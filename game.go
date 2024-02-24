@@ -9,6 +9,7 @@ type Game interface {
 }
 
 type internalGame struct {
+	// TODO: add stage NEXT NEXT NEXT
 }
 
 func (g *internalGame) Draw(target *ebiten.Image) {
@@ -17,12 +18,12 @@ func (g *internalGame) Draw(target *ebiten.Image) {
 
 func (g *internalGame) Update() error {
 	// TODO: internal update stuff
-	G.exGame.Update()
+	G.externalGame.Update()
 	return nil
 }
 
 func (g *internalGame) Layout(width, height int) (logicalWidth, logicalHeight int) {
-	return G.exGame.Layout(width, height)
+	return G.externalGame.Layout(width, height)
 }
 
 func InitGame() error {
@@ -36,8 +37,8 @@ func InitGame() error {
 }
 
 func RunGame(g Game) error {
-	G.exGame = g
-	G.exGame.Init()
+	G.externalGame = g
+	G.externalGame.Init()
 
-	return ebiten.RunGame(&G.inGame)
+	return ebiten.RunGame(&G.internalGame)
 }

@@ -15,6 +15,8 @@ import (
 
 // TODO: should this be private in the vigor package?
 type AssetManager struct {
+	// TODO: audio
+	// TODO: others
 	Images             map[string]*ebiten.Image
 	Sections           map[string]Section
 	AnimationTemplates map[string]*AnimationTemplate
