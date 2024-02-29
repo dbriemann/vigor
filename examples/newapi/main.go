@@ -1,6 +1,8 @@
 package main
 
-import "github.com/dbriemann/vigor"
+import (
+	"github.com/dbriemann/vigor"
+)
 
 const (
 	screenWidth  = 160
@@ -23,6 +25,10 @@ type Knight struct {
 	vigor.Sprite
 }
 
+func (k *Knight) Update() {
+	k.Sprite.Update()
+}
+
 func NewKnight(x, y int) *Knight {
 	k := &Knight{
 		Sprite: *vigor.NewSprite("knight_attack1"),
@@ -37,6 +43,9 @@ func main() {
 	vigor.InitGame()
 
 	knight := NewKnight(50, 50)
+	knight.Scale(3, 3)
+
+	vigor.G.Add(knight)
 
 	vigor.RunGame(&g)
 }

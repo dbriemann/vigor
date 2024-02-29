@@ -13,7 +13,7 @@ type Object struct {
 
 func NewObject() (e Object) {
 	G.idcounter++
-	e.id = G.idcounter
+	e.id = G.createId()
 	e.motionDisabled = true
 	return
 }

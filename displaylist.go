@@ -4,7 +4,8 @@ import "github.com/hajimehoshi/ebiten/v2"
 
 type DisplayList struct {
 	// TODO: use better data structure than slice for adding, removing and being ordered.
-	staged []Stageable
+	staged  []Stageable
+	visible bool
 }
 
 func (d *DisplayList) Add(s Stageable) {
@@ -36,5 +37,9 @@ func (d *DisplayList) Update() {
 }
 
 func (d *DisplayList) Visible() bool {
-	return true
+	return d.visible
+}
+
+func (d *DisplayList) Show(v bool) {
+	d.visible = v
 }

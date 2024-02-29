@@ -9,17 +9,21 @@ type Game interface {
 }
 
 type internalGame struct {
-	// TODO: add stage NEXT NEXT NEXT
+	stage DisplayList
 }
 
 func (g *internalGame) Draw(target *ebiten.Image) {
-	// TODO: internal draw stuff
+	g.stage.draw(target)
 }
 
 func (g *internalGame) Update() error {
-	// TODO: internal update stuff
+	g.stage.Update()
 	G.externalGame.Update()
 	return nil
+}
+
+func (g *internalGame) add(s Stageable) {
+	g.stage.Add(s)
 }
 
 func (g *internalGame) Layout(width, height int) (logicalWidth, logicalHeight int) {
@@ -32,6 +36,8 @@ func InitGame() error {
 	if err := G.assets.LoadConfig(configFilePath); err != nil {
 		return err
 	}
+
+	G.SetTPS(60)
 
 	return nil
 }
