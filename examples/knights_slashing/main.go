@@ -59,7 +59,6 @@ type Game struct {
 	bgKnights  []*vigor.Animation
 	funcIndex  int
 	dur        time.Duration
-	// millis     int
 }
 
 func (g *Game) Update() error {

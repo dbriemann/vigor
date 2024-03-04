@@ -58,8 +58,8 @@ type AnimationTemplate struct {
 	Sprites     []*ebiten.Image
 	Frames      []int
 	Section     Section
-	FrameWidth  int
-	FrameHeight int
+	FrameWidth  int // TODO: should this be uint32?
+	FrameHeight int // TODO: should this be uint32?
 	Duration    time.Duration
 	Looped      bool
 }

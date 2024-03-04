@@ -9,12 +9,13 @@ A framework extending ebitengine which more batteries:
 - effects (WIP),
 - TODO: collision
 - TODO: camera
-- TODO: input management
+- TODO: input management: <https://haxeflixel.com/documentation/actions/>
 - TODO: particles
 - TODO: localization
 - TODO: cutscenes
 - TODO: state management
 - TODO: tweening
+- TODO: debug mode showing wireframes and internal infos in running game
 
 - TODO: thread safety
 

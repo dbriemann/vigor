@@ -1,5 +1,12 @@
 package vigor
 
+import (
+	"fmt"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	ebinput "github.com/quasilyte/ebitengine-input"
+)
+
 // TODO: make glob thread safe.
 var G glob
 
@@ -10,6 +17,7 @@ type glob struct {
 	tps          uint32
 	dt           float32
 	idcounter    uint64
+	debugMsg     string // HACK:
 }
 
 func (g *glob) createId() uint64 {
@@ -38,4 +46,17 @@ func (g *glob) Add(s Stageable) {
 
 func SetConfigFile(cfgFilePath string) {
 	configFilePath = cfgFilePath
+}
+
+func SetWindowSize(w, h int) {
+	ebiten.SetWindowSize(w, h)
+}
+
+func NewInputHandler(id uint8, keymap ebinput.Keymap) *ebinput.Handler {
+	return G.internalGame.input.NewHandler(id, keymap)
+}
+
+// HACK: this is to change.
+func DebugPrintf(format string, a ...any) {
+	G.debugMsg = fmt.Sprintf(format, a...)
 }

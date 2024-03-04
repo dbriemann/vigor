@@ -48,9 +48,13 @@ func (e *Object) SetMotion(enabled bool) {
 	e.motionDisabled = !enabled
 }
 
-func (e Object) Pos() Vec2[int] {
+func (e *Object) Pos() Vec2[int] {
 	// TODO: is Round better than Floor for pixel perfect positions?
 	return Vec2Floor[float32, int](e.pos)
+}
+
+func (e *Object) Dim() Vec2[uint32] {
+	return e.dim
 }
 
 func (e *Object) Update() {
