@@ -1,33 +1,27 @@
 package main
 
-// The awesome knight sprite is taken from here:
-// https://aamatniekss.itch.io/fantasy-knight-free-pixelart-animated-character
-// Go checkout the artist's pixel work.
-
 import (
-	_ "embed"
-	"fmt"
-	_ "image/png"
-	"log"
 	"reflect"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/dbriemann/vigor"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	input "github.com/quasilyte/ebitengine-input"
 	"github.com/tanema/gween/ease"
 )
 
 const (
-	screenWidth  = 320
-	screenHeight = 240
-	frameWidth   = 120
-	frameHeight  = 80
-
+	screenWidth    = 320
+	screenHeight   = 240
+	frameWidth     = 120
+	frameHeight    = 80
 	bgKnightsCount = 10
+
+	ActionSlower input.Action = iota
+	ActionFaster
+	ActionPrevEaseFunc
+	ActionNextEaseFunc
 )
 
 func GetFunctionName(i interface{}) string {
@@ -50,118 +44,95 @@ var (
 		ease.InElastic, ease.OutElastic, ease.InOutElastic, ease.OutInElastic,
 	}
 
-	dt = 1.0 / float32(ebiten.TPS())
+	keymap = input.Keymap{
+		ActionSlower:       {input.KeyGamepadDown, input.KeyDown},
+		ActionFaster:       {input.KeyGamepadUp, input.KeyUp},
+		ActionPrevEaseFunc: {input.KeyGamepadLeft, input.KeyLeft},
+		ActionNextEaseFunc: {input.KeyGamepadRight, input.KeyRight},
+	}
 )
 
 type Game struct {
-	man        vigor.AssetManager
-	knightAnim *vigor.Animation
-	bgKnights  []*vigor.Animation
-	funcIndex  int
-	dur        time.Duration
+	bgKnights []*Knight
+	knight    *Knight
+	input     *input.Handler
+	dur       time.Duration
+	funcIndex int
 }
 
-func (g *Game) Update() error {
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+func (g *Game) Init() {
+	g.input = vigor.NewInputHandler(0, keymap)
+
+	g.knight = NewKnight(0, 0)
+	g.knight.SetPos(screenWidth/2-float32(frameWidth/2), screenHeight/2-float32(frameHeight/2))
+	vigor.G.Add(g.knight)
+
+	g.bgKnights = make([]*Knight, bgKnightsCount)
+	for i := range bgKnightsCount {
+		g.bgKnights[i] = NewKnight(0, 0)
+		g.bgKnights[i].SetDuration(time.Millisecond * time.Duration(500+i*100))
+		g.bgKnights[i].SetPos(float32(screenWidth*i)/bgKnightsCount, float32(screenHeight/2+frameHeight))
+		g.bgKnights[i].Scale(0.3, 0.3)
+		vigor.G.Add(g.bgKnights[i])
+	}
+}
+
+func (g *Game) Update() {
+	if g.input.ActionIsJustPressed(ActionFaster) {
 		g.dur += 100 * time.Millisecond
-		g.applySettings()
-	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
+		g.knight.SetDuration(g.dur)
+	} else if g.input.ActionIsJustPressed(ActionSlower) {
 		if g.dur >= 200*time.Millisecond {
 			g.dur -= 100 * time.Millisecond
-			g.applySettings()
+			g.knight.SetDuration(g.dur)
 		}
-	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
+	} else if g.input.ActionIsJustPressed(ActionPrevEaseFunc) {
 		if g.funcIndex > 0 {
 			g.funcIndex--
-			g.applySettings()
+			g.knight.SetTweenFunc(easeFuncs[g.funcIndex])
 		}
-	} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
+	} else if g.input.ActionIsJustPressed(ActionNextEaseFunc) {
 		if g.funcIndex < len(easeFuncs)-1 {
 			g.funcIndex++
-			g.applySettings()
+			g.knight.SetTweenFunc(easeFuncs[g.funcIndex])
 		}
 	}
-
-	g.knightAnim.Update(dt)
-	for i := 0; i < bgKnightsCount; i++ {
-		g.bgKnights[i].Update(dt)
-	}
-
-	return nil
-}
-
-func (g *Game) Draw(target *ebiten.Image) {
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(screenWidth/2, screenHeight/2)
-	op.GeoM.Translate(-frameWidth/2, -frameHeight/2)
-	g.knightAnim.Draw(target, op)
-
-	for i := 0; i < bgKnightsCount; i++ {
-		op.GeoM.Reset()
-		op.GeoM.Scale(0.3, 0.3)
-		op.GeoM.Translate(float64(screenWidth*i/bgKnightsCount), screenHeight/2+frameHeight)
-		g.bgKnights[i].Draw(target, op)
-	}
-
-	msg := fmt.Sprintf("Ease func: %s (left/right arrows)\nDuration: %s (up/down arrows)",
+	// fmt.Println("ease func:", GetFunctionName(easeFuncs[g.funcIndex]))
+	// fmt.Println("duration:", g.dur)
+	vigor.DebugPrintf("Ease func: %s (left/right arrows)\nDuration: %s (up/down arrows)",
 		GetFunctionName(easeFuncs[g.funcIndex]),
 		g.dur,
 	)
-	ebitenutil.DebugPrint(target, msg)
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+func (g *Game) Layout(w, h int) (int, int) {
 	return screenWidth, screenHeight
 }
 
-func NewGame() *Game {
-	g := &Game{
-		funcIndex: 0,
-		man:       vigor.NewAssetManager(),
-		bgKnights: make([]*vigor.Animation, bgKnightsCount),
-	}
-
-	if err := g.man.LoadConfig("assets/config.json"); err != nil {
-		panic(err)
-	}
-
-	a, err := vigor.NewAnimation(g.man.AnimationTemplates["knight_attack1"])
-	if err != nil {
-		panic(err)
-	}
-	g.knightAnim = a
-
-	g.dur = g.knightAnim.Duration
-
-	g.knightAnim.Run()
-
-	for i := 0; i < bgKnightsCount; i++ {
-		a, err := vigor.NewAnimation(g.man.AnimationTemplates["knight_attack1"])
-		if err != nil {
-			panic(err)
-		}
-		g.bgKnights[i] = a
-		g.bgKnights[i].SetDuration(time.Millisecond * time.Duration(500+i*100))
-		g.bgKnights[i].Run()
-	}
-
-	return g
+type Knight struct {
+	vigor.Sprite
 }
 
-func (g *Game) applySettings() {
-	a := g.knightAnim
-	a.SetDuration(g.dur)
-	a.SetTweenFunc(easeFuncs[g.funcIndex])
-	a.InitTween()
+func (k *Knight) Update() {
+	k.Sprite.Update()
+}
+
+func NewKnight(x, y int) *Knight {
+	k := &Knight{
+		Sprite: *vigor.NewSprite("knight_attack1"),
+	}
+	k.SetPos(float32(x), float32(y))
+	return k
 }
 
 func main() {
-	game := NewGame()
-
-	ebiten.SetWindowSize(screenWidth*4, screenHeight*4)
-	ebiten.SetWindowTitle("Animation (Ebiten Demo)")
-
-	if err := ebiten.RunGame(game); err != nil {
-		log.Fatal(err)
+	vigor.SetWindowSize(4*screenWidth, 4*screenHeight)
+	g := Game{
+		dur:       700 * time.Millisecond,
+		funcIndex: 0,
 	}
+
+	vigor.InitGame(&g)
+
+	vigor.RunGame()
 }
