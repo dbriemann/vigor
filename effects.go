@@ -11,6 +11,14 @@ import (
 )
 
 // TODO: somehow unify effect usage
+type Effect interface {
+	update(float32) bool
+	draw(*ebiten.Image, *colorm.DrawImageOptions)
+
+	Start()
+	Stop()
+	Reset()
+}
 
 type ShakeEffect struct {
 	magnitudeX float32
@@ -89,7 +97,7 @@ func NewFlashEffect(image *ebiten.Image, duration float32, in, out ease.TweenFun
 		running:  false,
 		tweenSeq: gween.NewSequence(
 			gween.New(0, 1, duration/2, in),
-			gween.New(1, 0, duration/2, in),
+			gween.New(1, 0, duration/2, out),
 		),
 	}
 	e.overlay.Fill(color.White)
@@ -129,6 +137,7 @@ func (e *FlashEffect) Reset() {
 func (e *FlashEffect) Start() {
 	e.running = true
 }
+
 func (e *FlashEffect) Stop() {
 	e.running = false
 }

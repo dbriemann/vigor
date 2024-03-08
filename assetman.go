@@ -23,6 +23,7 @@ type AssetManager struct {
 	RootPath           string
 }
 
+// TODO: warn if asset manager is used before init function of game.
 func NewAssetManager() AssetManager {
 	r := AssetManager{
 		Images:             map[string]*ebiten.Image{},

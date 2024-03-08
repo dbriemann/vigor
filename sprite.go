@@ -18,14 +18,17 @@ type Stageable interface {
 
 // Sprite represents every entity that has a position, is updated and drawn.
 type Sprite struct {
-	activeAnim *Animation
-	animations map[string]*Animation
-	scale      Vec2[float32]
-	visible    bool
+	activeAnim     *Animation
+	animations     map[string]*Animation
+	activeAnimName string
+	scale          Vec2[float32]
+	visible        bool
 
 	Object
 }
 
+// NewSprite takes any amount of animations by name. These animations must exist in the asset manager.
+// The first animation is used as default animation.
 func NewSprite(animNames ...string) *Sprite {
 	s := &Sprite{
 		Object:     NewObject(),
@@ -33,23 +36,45 @@ func NewSprite(animNames ...string) *Sprite {
 		scale:      Vec2[float32]{X: 1, Y: 1},
 		visible:    true,
 	}
-	for _, name := range animNames {
+	for i, name := range animNames {
 		anim, err := NewAnimation(G.assets.GetAnimTemplateOrPanic(name))
 		if err == nil {
 			s.animations[name] = anim
-			s.activeAnim = anim // TODO:
+			if i == 0 {
+				s.activeAnim = anim
+				s.activeAnimName = name
+			}
 		}
 		// For any error we just skip creating the animation for now.
 		// TODO: logging / behavior ?
 	}
 
-	// TODO: how set dim for sprites? adjust with scaling?
+	// TODO: how set dim/bbox for sprites? adjust with scaling?
 	s.Object.dim.X = uint32(s.activeAnim.AnimationTemplate.FrameWidth)
 	s.Object.dim.Y = uint32(s.activeAnim.AnimationTemplate.FrameHeight)
 
 	s.activeAnim.Run()
 
 	return s
+}
+
+func (s *Sprite) SetAnimation(name string) {
+	anim, ok := s.animations[name]
+	if !ok {
+		// TODO: ??
+		return
+	}
+	s.activeAnim.Stop()
+	s.activeAnim = anim
+	s.activeAnimName = name
+	s.activeAnim.Run()
+}
+
+func (s *Sprite) Animation() (name string, paused, finished bool) {
+	name = s.activeAnimName
+	paused = s.activeAnim.Paused
+	finished = s.activeAnim.Finished
+	return
 }
 
 func (s *Sprite) draw(target *ebiten.Image) {
@@ -80,6 +105,18 @@ func (s *Sprite) Visible() bool {
 
 func (s *Sprite) Show(v bool) {
 	s.visible = v
+}
+
+func (s *Sprite) StopAnimation() {
+	s.activeAnim.Stop()
+}
+
+func (s *Sprite) StartAnimation() {
+	s.activeAnim.Run()
+}
+
+func (s *Sprite) ResetAnimation() {
+	s.activeAnim.Reset()
 }
 
 // SetTweenFunc sets the easing function for the active animation.

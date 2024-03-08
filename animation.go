@@ -153,9 +153,10 @@ func (a *Animation) Run() {
 	a.Paused = false
 }
 
-// Reset set the animation to frame zero, keeps running/paused state as is.
+// Reset set the animation to frame zero, keeps paused state as is.
 func (a *Animation) Reset() {
 	a.Frame = a.Frames[0]
+	a.Finished = false
 	a.Tween.Reset()
 }
 
