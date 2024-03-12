@@ -23,6 +23,8 @@ func (e *Object) Id() uint64 {
 }
 
 func (e *Object) SetPos(x, y float32) {
+	e.lastPos.X = x
+	e.lastPos.Y = y
 	e.pos.X = x
 	e.pos.Y = y
 }
@@ -48,13 +50,25 @@ func (e *Object) SetMotion(enabled bool) {
 	e.motionDisabled = !enabled
 }
 
-func (e *Object) Pos() Vec2[int] {
+func (e *Object) PixelPos() Vec2[int] {
 	// TODO: is Round better than Floor for pixel perfect positions?
 	return Vec2Floor[float32, int](e.pos)
 }
 
-func (e *Object) Dim() Vec2[uint32] {
-	return e.dim
+func (e *Object) Pos() *Vec2[float32] {
+	return &e.pos
+}
+
+func (e *Object) Vel() *Vec2[float32] {
+	return &e.vel
+}
+
+func (e *Object) Accel() *Vec2[float32] {
+	return &e.accel
+}
+
+func (e *Object) Dim() *Vec2[uint32] {
+	return &e.dim
 }
 
 func (e *Object) Update() {
@@ -62,8 +76,6 @@ func (e *Object) Update() {
 		return
 	}
 
-	e.pos.X = e.lastPos.X
-	e.pos.Y = e.lastPos.Y
 	// TODO: angular velocity
 
 	e.pos.X += e.vel.X * G.Dt()

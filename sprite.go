@@ -7,15 +7,6 @@ import (
 	"github.com/tanema/gween/ease"
 )
 
-type Stageable interface {
-	draw(*ebiten.Image)
-
-	Id() uint64
-	Update()
-	Visible() bool
-	Show(bool)
-}
-
 // Sprite represents every entity that has a position, is updated and drawn.
 type Sprite struct {
 	activeAnim     *Animation
@@ -26,6 +17,8 @@ type Sprite struct {
 
 	Object
 }
+
+// TODO: static sprite => combine with Sprite or create separate type?
 
 // NewSprite takes any amount of animations by name. These animations must exist in the asset manager.
 // The first animation is used as default animation.
@@ -50,8 +43,8 @@ func NewSprite(animNames ...string) *Sprite {
 	}
 
 	// TODO: how set dim/bbox for sprites? adjust with scaling?
-	s.Object.dim.X = uint32(s.activeAnim.AnimationTemplate.FrameWidth)
-	s.Object.dim.Y = uint32(s.activeAnim.AnimationTemplate.FrameHeight)
+	s.dim.X = uint32(s.activeAnim.FrameWidth)
+	s.dim.Y = uint32(s.activeAnim.FrameHeight)
 
 	s.activeAnim.Run()
 
@@ -67,6 +60,7 @@ func (s *Sprite) SetAnimation(name string) {
 	s.activeAnim.Stop()
 	s.activeAnim = anim
 	s.activeAnimName = name
+	s.activeAnim.Reset() // TODO: is this needed here?
 	s.activeAnim.Run()
 }
 
@@ -78,17 +72,17 @@ func (s *Sprite) Animation() (name string, paused, finished bool) {
 }
 
 func (s *Sprite) draw(target *ebiten.Image) {
-	if !s.Visible() {
-		return
-	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(s.scale.X), float64(s.scale.Y))
-	op.GeoM.Translate(float64(s.Pos().X), float64(s.Pos().Y))
+	op.GeoM.Translate(float64(s.PixelPos().X), float64(s.PixelPos().Y))
 	s.activeAnim.Draw(target, op)
 	// TODO: debug wireframe
 	// vector.StrokeRect(target, s.pos.X, s.pos.Y, float32(s.dim.X), float32(s.dim.Y), 2, color.White, false)
 }
 
+// func (s *Sprite)
+
+// TODO: should Object be scaled instead?
 func (s *Sprite) Scale(x, y float32) {
 	s.scale.X = x
 	s.scale.Y = y

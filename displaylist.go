@@ -1,6 +1,8 @@
 package vigor
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 type DisplayList struct {
 	// TODO: use better data structure than slice for adding, removing and being ordered.

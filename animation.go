@@ -55,7 +55,7 @@ func (s *Section) Bounds() image.Rectangle {
 type AnimationTemplate struct {
 	Sheet       *ebiten.Image
 	EaseFunc    ease.TweenFunc
-	Sprites     []*ebiten.Image
+	Images      []*ebiten.Image
 	Frames      []int
 	Section     Section
 	FrameWidth  int // TODO: should this be uint32?
@@ -73,7 +73,7 @@ func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames
 		FrameHeight: h,
 		Frames:      frames,
 		Sheet:       sheet,
-		Sprites:     []*ebiten.Image{},
+		Images:      []*ebiten.Image{},
 		Duration:    duration,
 		EaseFunc:    easeFunc,
 		Looped:      looped,
@@ -114,7 +114,7 @@ func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames
 				upperLeft.X+t.FrameWidth,
 				upperLeft.Y+t.FrameHeight,
 			)).(*ebiten.Image)
-			t.Sprites = append(t.Sprites, subImg)
+			t.Images = append(t.Images, subImg)
 		}
 	}
 
@@ -183,7 +183,7 @@ func (a *Animation) Update(dt float32) {
 }
 
 func (a *Animation) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	target.DrawImage(a.Sprites[a.Frame], op)
+	target.DrawImage(a.Images[a.Frame], op)
 }
 
 func (a *Animation) SetFrames(frames []int) {
