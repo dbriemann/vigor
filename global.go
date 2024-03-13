@@ -44,6 +44,10 @@ func (g *glob) Add(s Stageable) {
 	g.internalGame.add(s)
 }
 
+func (g *glob) Remove(s Stageable) {
+	// TODO:
+}
+
 func SetConfigFile(cfgFilePath string) {
 	configFilePath = cfgFilePath
 }

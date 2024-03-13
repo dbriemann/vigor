@@ -22,7 +22,7 @@ type Image = Canvas
 func NewImage(name string) *Image {
 	i := &Image{
 		Object: NewObject(),
-		visual: NewVisual(),
+		visual: newVisual(),
 
 		visible: true,
 		image:   G.assets.GetImageOrPanic(name),
@@ -35,7 +35,7 @@ func NewImage(name string) *Image {
 func NewCanvas(width, height int) *Canvas {
 	c := &Canvas{
 		Object: NewObject(),
-		visual: NewVisual(),
+		visual: newVisual(),
 
 		visible: true,
 		image:   ebiten.NewImage(width, height),
@@ -47,7 +47,7 @@ func NewCanvas(width, height int) *Canvas {
 
 func (c *Canvas) draw(target *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(c.scale.X), float64(c.scale.Y))
+	c.transform(op, int(c.Dim().X), int(c.Dim().Y))
 	op.GeoM.Translate(float64(c.PixelPos().X), float64(c.PixelPos().Y))
 	target.DrawImage(c.image, op)
 }

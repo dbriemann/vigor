@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/dbriemann/vigor"
@@ -21,26 +22,36 @@ var keymap = input.Keymap{
 }
 
 type Game struct {
-	input        *input.Handler
-	dove         *Dove
-	bouncerLeft  *Bouncer
-	bouncerRight *Bouncer
-	spikesTop    *vigor.Image
-	spikesBottom *vigor.Image
+	input         *input.Handler
+	dove          *Dove
+	bouncerLeft   *Bouncer
+	bouncerRight  *Bouncer
+	spikesTop     *vigor.Image
+	spikesBottom  *vigor.Image
+	gameOverScene bool
 }
 
 func (g *Game) Init() {
 	g.input = vigor.NewInputHandler(0, keymap)
 
 	g.spikesTop = vigor.NewImage("spikes")
-	g.spikesTop.SetPos(0, 50)
+	g.spikesTop.SetPos(0, 0)
 	g.spikesTop.FlipY()
 	vigor.G.Add(g.spikesTop)
 
-	g.bouncerLeft = NewBouncer(0, 0)
+	spikesHeight := g.spikesTop.Dim().Y
+	fmt.Println("spikes height", spikesHeight)
+
+	g.spikesBottom = vigor.NewImage("spikes")
+	g.spikesBottom.SetPos(0, float32(screenHeight-spikesHeight))
+	vigor.G.Add(g.spikesBottom)
+
+	bouncerHeight := int(screenHeight-2*spikesHeight) - 4
+	bouncerTy := spikesHeight + 2
+	g.bouncerLeft = NewBouncer(0, float32(bouncerTy), bouncerHeight)
 	g.bouncerLeft.Init()
 
-	g.bouncerRight = NewBouncer(screenWidth-4, 0)
+	g.bouncerRight = NewBouncer(screenWidth-4, float32(bouncerTy), bouncerHeight)
 	g.bouncerRight.Init()
 
 	// Dove is added last so it is painted last.
@@ -48,7 +59,19 @@ func (g *Game) Init() {
 	g.dove.Init()
 }
 
+func (g *Game) Over() {
+	// TODO: wait for effects to end
+	// TODO: particles (feathers)
+	fmt.Println("you died")
+	g.dove.Die()
+	g.gameOverScene = true
+}
+
 func (g *Game) Update() {
+	if g.gameOverScene {
+		return
+	}
+
 	if g.input.ActionIsJustPressed(ActionFlap) {
 		if g.dove.Object.Accel().Y == 0 {
 			g.dove.SetAccel(0, 500)
@@ -57,6 +80,17 @@ func (g *Game) Update() {
 		}
 		g.dove.SetAnimation("dove_flap")
 		g.dove.Vel().Y = -screenHeight
+	}
+
+	if vigor.Collides(g.dove, g.spikesTop) || vigor.Collides(g.dove, g.spikesBottom) {
+		// death
+		g.Over()
+	} else if vigor.Collides(g.dove, g.bouncerLeft.back) {
+		g.dove.Vel().X *= -1
+		g.dove.FlipX()
+	} else if vigor.Collides(g.dove, g.bouncerRight.back) {
+		g.dove.Vel().X *= -1
+		g.dove.FlipX()
 	}
 }
 
@@ -69,11 +103,10 @@ type Bouncer struct {
 	front *vigor.Canvas
 }
 
-func NewBouncer(x, y float32) *Bouncer {
+func NewBouncer(x, y float32, height int) *Bouncer {
 	b := &Bouncer{
-		// TODO: using 2 canvases sucks for this
-		back:  vigor.NewCanvas(4, screenHeight),
-		front: vigor.NewCanvas(4, screenHeight),
+		back:  vigor.NewCanvas(4, height),
+		front: vigor.NewCanvas(4, height),
 	}
 	b.back.SetPos(x, y)
 	b.front.SetPos(x, y)
@@ -99,8 +132,21 @@ func NewDove() *Dove {
 	return d
 }
 
-func (d *Dove) Init() {
+func (d *Dove) Die() {
+	// TODO: vigor.G.Remove()
+	d.Show(false)
+	d.SetMotion(false)
+	d.SetPos(6666, screenHeight/2)
+}
+
+func (d *Dove) Live() {
+	d.Show(true)
+	d.SetMotion(true)
 	d.SetPos(screenWidth/2, screenHeight/2)
+}
+
+func (d *Dove) Init() {
+	d.Live()
 	vigor.G.Add(d)
 }
 

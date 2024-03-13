@@ -12,9 +12,8 @@ type Sprite struct {
 	activeAnim     *Animation
 	animations     map[string]*Animation
 	activeAnimName string
-	scale          Vec2[float32]
-	visible        bool
 
+	visual
 	Object
 }
 
@@ -24,10 +23,10 @@ type Sprite struct {
 // The first animation is used as default animation.
 func NewSprite(animNames ...string) *Sprite {
 	s := &Sprite{
-		Object:     NewObject(),
+		Object: NewObject(),
+		visual: newVisual(),
+
 		animations: map[string]*Animation{},
-		scale:      Vec2[float32]{X: 1, Y: 1},
-		visible:    true,
 	}
 	for i, name := range animNames {
 		anim, err := NewAnimation(G.assets.GetAnimTemplateOrPanic(name))
@@ -73,11 +72,9 @@ func (s *Sprite) Animation() (name string, paused, finished bool) {
 
 func (s *Sprite) draw(target *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(s.scale.X), float64(s.scale.Y))
+	s.transform(op, int(s.Dim().X), int(s.Dim().Y))
 	op.GeoM.Translate(float64(s.PixelPos().X), float64(s.PixelPos().Y))
 	s.activeAnim.Draw(target, op)
-	// TODO: debug wireframe
-	// vector.StrokeRect(target, s.pos.X, s.pos.Y, float32(s.dim.X), float32(s.dim.Y), 2, color.White, false)
 }
 
 // func (s *Sprite)
@@ -91,14 +88,6 @@ func (s *Sprite) Scale(x, y float32) {
 func (s *Sprite) Update() {
 	s.activeAnim.Update(G.Dt())
 	s.Object.Update()
-}
-
-func (s *Sprite) Visible() bool {
-	return s.visible
-}
-
-func (s *Sprite) Show(v bool) {
-	s.visible = v
 }
 
 func (s *Sprite) StopAnimation() {

@@ -85,21 +85,26 @@ func (e *Object) Update() {
 	e.vel.Y += e.accel.Y * G.Dt()
 }
 
-func Collides(obj1, obj2 *Object) bool {
+type positionable interface {
+	Pos() *Vec2[float32]
+	Dim() *Vec2[uint32]
+}
+
+func Collides(obj1, obj2 positionable) bool {
 	// TODO: use lastPos for better collision detection.
 
 	// If one of the rectangles does have a zero area, there is no intersection.
-	if obj1.dim.X <= 0 || obj2.dim.X <= 0 || obj1.dim.Y <= 0 || obj2.dim.Y <= 0 {
+	if obj1.Dim().X <= 0 || obj2.Dim().X <= 0 || obj1.Dim().Y <= 0 || obj2.Dim().Y <= 0 {
 		return false
 	}
 
 	// If one of the rectangles is left of the other, there is no intersection.
-	if obj1.pos.X > obj2.pos.X+float32(obj2.dim.X) || obj1.pos.X+float32(obj1.dim.X) < obj2.pos.X {
+	if obj1.Pos().X > obj2.Pos().X+float32(obj2.Dim().X) || obj1.Pos().X+float32(obj1.Dim().X) < obj2.Pos().X {
 		return false
 	}
 
 	// If one of the rectangles is above the other, there is no intersection.
-	if obj1.pos.Y > obj2.pos.Y+float32(obj2.dim.Y) || obj1.pos.Y+float32(obj1.dim.Y) < obj2.pos.Y {
+	if obj1.Pos().Y > obj2.Pos().Y+float32(obj2.Dim().Y) || obj1.Pos().Y+float32(obj1.Dim().Y) < obj2.Pos().Y {
 		return false
 	}
 
