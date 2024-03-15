@@ -7,8 +7,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// Canvas is similar to a sprite, but can be altered and is not animated.
-type Canvas struct {
+// Image is similar to a sprite, but can be altered and is not animated.
+type Image struct {
 	image   *ebiten.Image
 	visible bool
 
@@ -16,8 +16,15 @@ type Canvas struct {
 	Object
 }
 
-// TODO: do we need the Image alias to Canvas at all?
-type Image = Canvas
+func CopyImage(img *Image) *Image {
+	i := &Image{
+		image:   img.image,
+		visible: img.visible,
+		visual:  img.visual,
+		Object:  img.Object,
+	}
+	return i
+}
 
 func NewImage(name string) *Image {
 	i := &Image{
@@ -32,39 +39,39 @@ func NewImage(name string) *Image {
 	return i
 }
 
-func NewCanvas(width, height int) *Canvas {
-	c := &Canvas{
+func NewCanvas(width, height int) *Image {
+	c := &Image{
 		Object: NewObject(),
 		visual: newVisual(),
 
 		visible: true,
-		image:   ebiten.NewImage(width, height),
+		image:   ebiten.NewImage(width, height), // TODO: should this be a named image in asset manager?
 	}
 	c.SetDim(uint32(width), uint32(height))
 
 	return c
 }
 
-func (c *Canvas) draw(target *ebiten.Image) {
+func (c *Image) draw(target *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	c.transform(op, int(c.Dim().X), int(c.Dim().Y))
 	op.GeoM.Translate(float64(c.PixelPos().X), float64(c.PixelPos().Y))
 	target.DrawImage(c.image, op)
 }
 
-func (s *Canvas) Show(v bool) {
+func (s *Image) Show(v bool) {
 	s.visible = v
 }
 
-func (c *Canvas) Visible() bool {
+func (c *Image) Visible() bool {
 	return c.visible
 }
 
-func (c *Canvas) DrawFilledRect(x, y, width, height float32, col color.Color, antialias bool) {
+func (c *Image) DrawFilledRect(x, y, width, height float32, col color.Color, antialias bool) {
 	vector.DrawFilledRect(c.image, x, y, width, height, col, antialias)
 }
 
-func (c *Canvas) DrawRect(x, y, width, height, strokeWidth float32, col color.Color, antialias bool) {
+func (c *Image) DrawRect(x, y, width, height, strokeWidth float32, col color.Color, antialias bool) {
 	vector.StrokeRect(c.image, x, y, width, height, strokeWidth, col, antialias)
 }
 

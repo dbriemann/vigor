@@ -4,7 +4,8 @@
 		"images/dove.png": "dove_sheet",
 		"images/bg.png": "background",
 		"images/spike.png": "spikes",
-		"images/paddle.png": "paddle"
+		"images/paddle.png": "paddle",
+		"images/feather.png": "feather"
 	},
 	"sections": {
 		"dove_section": {

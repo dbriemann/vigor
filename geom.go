@@ -15,6 +15,28 @@ type Vec2[T Number] struct {
 	Y T
 }
 
+func (v Vec2[T]) Normalize() (out Vec2[T]) {
+	if v.X == 0 && v.Y == 0 {
+		return v
+	}
+	len := math.Sqrt(float64(v.X*v.X + v.Y + v.Y))
+	out.X = T(float64(v.X) / len)
+	out.Y = T(float64(v.Y) / len)
+	return
+}
+
+func (v Vec2[T]) Rotate(rad float64) (out Vec2[T]) {
+	out.X = T(math.Cos(rad))*v.X - T(math.Sin(rad))*v.Y
+	out.Y = T(math.Sin(rad))*v.X - T(math.Cos(rad))*v.Y
+	return
+}
+
+func (v Vec2[T]) Multiply(s T) (out Vec2[T]) {
+	out.X = v.X * s
+	out.Y = v.Y * s
+	return
+}
+
 func Vec2ToType[T, U Number](in Vec2[T]) (out Vec2[U]) {
 	out.X = U(in.X)
 	out.Y = U(in.Y)

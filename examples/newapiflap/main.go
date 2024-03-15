@@ -22,17 +22,23 @@ var keymap = input.Keymap{
 }
 
 type Game struct {
-	input         *input.Handler
-	dove          *Dove
-	bouncerLeft   *Bouncer
-	bouncerRight  *Bouncer
-	spikesTop     *vigor.Image
-	spikesBottom  *vigor.Image
-	gameOverScene bool
+	input          *input.Handler
+	dove           *Dove
+	bouncerLeft    *Bouncer
+	bouncerRight   *Bouncer
+	spikesTop      *vigor.Image
+	spikesBottom   *vigor.Image
+	gameOverScene  bool
+	featherEmitter *vigor.Emitter
+	background     *vigor.Image
 }
 
 func (g *Game) Init() {
 	g.input = vigor.NewInputHandler(0, keymap)
+
+	g.background = vigor.NewImage("background")
+	vigor.G.Add(g.background)
+	g.background.SetPos(0, 0)
 
 	g.spikesTop = vigor.NewImage("spikes")
 	g.spikesTop.SetPos(0, 0)
@@ -57,13 +63,21 @@ func (g *Game) Init() {
 	// Dove is added last so it is painted last.
 	g.dove = NewDove()
 	g.dove.Init()
+
+	feather := vigor.NewImage("feather")
+
+	g.featherEmitter = vigor.NewParticleEmitter(*feather, screenWidth/2, screenHeight/2, 10, 0)
+	vigor.G.Add(g.featherEmitter)
 }
 
 func (g *Game) Over() {
 	// TODO: wait for effects to end
 	// TODO: particles (feathers)
 	fmt.Println("you died")
+	g.featherEmitter.SetOrigin(g.dove.Pos().X, g.dove.Pos().Y)
 	g.dove.Die()
+	g.featherEmitter.Show(true)
+	g.featherEmitter.Burst()
 	g.gameOverScene = true
 }
 
@@ -99,8 +113,8 @@ func (g *Game) Layout(w, h int) (int, int) {
 }
 
 type Bouncer struct {
-	back  *vigor.Canvas
-	front *vigor.Canvas
+	back  *vigor.Image
+	front *vigor.Image
 }
 
 func NewBouncer(x, y float32, height int) *Bouncer {

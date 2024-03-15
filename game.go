@@ -13,7 +13,7 @@ type Game interface {
 }
 
 type internalGame struct {
-	stage DisplayList
+	stage DisplayGroup
 	input ebinput.System
 }
 

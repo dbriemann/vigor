@@ -54,13 +54,3 @@ func (v *visual) transform(op *ebiten.DrawImageOptions, width, height int) {
 	// TODO: debug wireframe
 	// vector.StrokeRect(target, s.pos.X, s.pos.Y, float32(s.dim.X), float32(s.dim.Y), 2, color.White, false)
 }
-
-// scale = 1 --> no translation
-// scale = -1 --> translate by 1 x size
-// scale =
-// scale| trans
-// -----|-----
-//   1  |  0
-//  -1  |  1
-//   2  |  0
-//  -2  |  2
