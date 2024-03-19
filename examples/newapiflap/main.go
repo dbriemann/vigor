@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 
 	"github.com/dbriemann/vigor"
 	input "github.com/quasilyte/ebitengine-input"
+	"github.com/tanema/gween/ease"
 )
 
 const (
@@ -28,9 +28,9 @@ type Game struct {
 	bouncerRight   *Bouncer
 	spikesTop      *vigor.Image
 	spikesBottom   *vigor.Image
-	gameOverScene  bool
 	featherEmitter *vigor.Emitter
 	background     *vigor.Image
+	gameOverScene  bool
 }
 
 func (g *Game) Init() {
@@ -39,6 +39,7 @@ func (g *Game) Init() {
 	g.background = vigor.NewImage("background")
 	vigor.G.Add(g.background)
 	g.background.SetPos(0, 0)
+	flash := vigor.NewFlashEffect(g.background, 1.0, ease.Linear, ease.Linear)
 
 	g.spikesTop = vigor.NewImage("spikes")
 	g.spikesTop.SetPos(0, 0)
@@ -46,7 +47,6 @@ func (g *Game) Init() {
 	vigor.G.Add(g.spikesTop)
 
 	spikesHeight := g.spikesTop.Dim().Y
-	fmt.Println("spikes height", spikesHeight)
 
 	g.spikesBottom = vigor.NewImage("spikes")
 	g.spikesBottom.SetPos(0, float32(screenHeight-spikesHeight))
@@ -68,12 +68,12 @@ func (g *Game) Init() {
 
 	g.featherEmitter = vigor.NewParticleEmitter(*feather, screenWidth/2, screenHeight/2, 10, 0)
 	vigor.G.Add(g.featherEmitter)
+
+	vigor.G.ApplyEffect(flash)
 }
 
 func (g *Game) Over() {
 	// TODO: wait for effects to end
-	// TODO: particles (feathers)
-	fmt.Println("you died")
 	g.featherEmitter.SetOrigin(g.dove.Pos().X, g.dove.Pos().Y)
 	g.dove.Die()
 	g.featherEmitter.Show(true)
@@ -83,6 +83,10 @@ func (g *Game) Over() {
 
 func (g *Game) Update() {
 	if g.gameOverScene {
+		if g.featherEmitter.ActiveParticles() == 0 {
+			g.gameOverScene = false
+			g.dove.Live()
+		}
 		return
 	}
 
@@ -147,21 +151,24 @@ func NewDove() *Dove {
 }
 
 func (d *Dove) Die() {
-	// TODO: vigor.G.Remove()
 	d.Show(false)
 	d.SetMotion(false)
-	d.SetPos(6666, screenHeight/2)
+	d.SetPos(screenWidth/2, screenHeight/2)
 }
 
 func (d *Dove) Live() {
 	d.Show(true)
 	d.SetMotion(true)
 	d.SetPos(screenWidth/2, screenHeight/2)
+	d.SetVel(0, 0)
+	d.SetAccel(0, 0)
+	d.Scale(1, 1)
 }
 
 func (d *Dove) Init() {
 	d.Live()
 	vigor.G.Add(d)
+	// TODO: is not applied
 }
 
 func (d *Dove) Update() {

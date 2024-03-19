@@ -12,7 +12,7 @@ import (
 
 // TODO: somehow unify effect usage
 type Effect interface {
-	update(float32) bool
+	Update() bool
 	draw(*ebiten.Image, *colorm.DrawImageOptions)
 
 	Start()
@@ -42,7 +42,7 @@ func NewShakeEffect(duration, magX, magY float32) *ShakeEffect {
 	return e
 }
 
-func (e *ShakeEffect) Update(dt float32) bool {
+func (e *ShakeEffect) Update() bool {
 	if !e.running {
 		return false
 	}
@@ -50,7 +50,7 @@ func (e *ShakeEffect) Update(dt float32) bool {
 	e.displaceX = rand.Float32()*e.magnitudeX - e.magnitudeX/2
 	e.displaceY = rand.Float32()*e.magnitudeY - e.magnitudeY/2
 
-	e.runtime += dt
+	e.runtime += G.Dt()
 
 	if e.runtime >= e.duration {
 		e.runtime = e.duration
@@ -60,8 +60,7 @@ func (e *ShakeEffect) Update(dt float32) bool {
 	return !e.running
 }
 
-// TODO: probably should be Draw() to have unique interface for all effects.
-func (e *ShakeEffect) Apply(op *ebiten.DrawImageOptions) {
+func (e *ShakeEffect) draw(_ *ebiten.Image, op *ebiten.DrawImageOptions) {
 	if !e.running {
 		return
 	}
@@ -90,9 +89,10 @@ type FlashEffect struct {
 	running  bool
 }
 
-func NewFlashEffect(image *ebiten.Image, duration float32, in, out ease.TweenFunc) *FlashEffect {
+// TODO: make dynamic list of tween sequences (variadic arguments)
+func NewFlashEffect(s effectable, duration float32, in, out ease.TweenFunc) *FlashEffect {
 	e := &FlashEffect{
-		overlay:  ebiten.NewImage(image.Bounds().Dx(), image.Bounds().Dy()),
+		overlay:  ebiten.NewImage(int(s.Dim().X), int(s.Dim().Y)),
 		finished: false,
 		running:  false,
 		tweenSeq: gween.NewSequence(
@@ -105,7 +105,7 @@ func NewFlashEffect(image *ebiten.Image, duration float32, in, out ease.TweenFun
 	return e
 }
 
-func (e *FlashEffect) Update(dt float32) bool {
+func (e *FlashEffect) Update() bool {
 	if !e.running {
 		return false
 	}
@@ -113,18 +113,18 @@ func (e *FlashEffect) Update(dt float32) bool {
 		return true
 	}
 
-	val, _, finished := e.tweenSeq.Update(dt)
+	val, _, finished := e.tweenSeq.Update(G.Dt())
 	e.value = val
 	e.finished = finished
 	return finished
 }
 
-func (e *FlashEffect) Draw(target *ebiten.Image, op *colorm.DrawImageOptions) {
+func (e *FlashEffect) draw(target *ebiten.Image, op *colorm.DrawImageOptions) {
 	if !e.running || e.finished {
 		return
 	}
 	cm := colorm.ColorM{}
-	cm.ChangeHSV(1, 1, float64(e.value))
+	cm.Scale(1, 1, 1, float64(e.value))
 	colorm.DrawImage(target, e.overlay, cm, op)
 }
 

@@ -1,6 +1,8 @@
 package vigor
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2/colorm"
+)
 
 type visual struct {
 	scale   Vec2[float32]
@@ -36,7 +38,7 @@ func (v *visual) Show(on bool) {
 	v.visible = on
 }
 
-func (v *visual) transform(op *ebiten.DrawImageOptions, width, height int) {
+func (v *visual) transform(op *colorm.DrawImageOptions, width, height int) {
 	tx := 0.0
 	ty := 0.0
 

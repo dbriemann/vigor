@@ -93,9 +93,11 @@ func (e *Emitter) Update() {
 	e.toSpawn += float32(e.rate) * G.Dt()
 	amount := int(e.toSpawn)
 	for i := 0; i < amount; i++ {
-		e.spawn()
+		if !e.spawn() {
+			break
+		}
+		e.toSpawn -= 1
 	}
-	e.toSpawn -= float32(amount)
 
 	// Remove dead particles by swapping with last "good" one.
 	for i := 0; i < e.size; i++ {
@@ -112,6 +114,10 @@ func (e *Emitter) Update() {
 			e.particles[i].Update()
 		}
 	}
+}
+
+func (e *Emitter) ActiveParticles() int {
+	return e.size
 }
 
 func (e *Emitter) draw(target *ebiten.Image) {

@@ -40,11 +40,16 @@ func (g *glob) SetTPS(tps uint32) {
 	}
 }
 
-func (g *glob) Add(s Stageable) {
+func (g *glob) Add(s stageable) {
 	g.internalGame.add(s)
 }
 
-func (g *glob) Remove(s Stageable) {
+func (g *glob) ApplyEffect(e Effect) {
+	e.Start()
+	g.internalGame.effects = append(g.internalGame.effects, e)
+}
+
+func (g *glob) Remove(s stageable) {
 	// TODO:
 }
 

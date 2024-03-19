@@ -4,13 +4,17 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/tanema/gween/ease"
 )
+
+var _ effectable = (*Sprite)(nil)
 
 // Sprite represents every entity that has a position, is updated and drawn.
 type Sprite struct {
 	activeAnim     *Animation
 	animations     map[string]*Animation
+	effects        []Effect
 	activeAnimName string
 
 	visual
@@ -23,8 +27,9 @@ type Sprite struct {
 // The first animation is used as default animation.
 func NewSprite(animNames ...string) *Sprite {
 	s := &Sprite{
-		Object: NewObject(),
-		visual: newVisual(),
+		Object:  NewObject(),
+		visual:  newVisual(),
+		effects: []Effect{},
 
 		animations: map[string]*Animation{},
 	}
@@ -70,14 +75,21 @@ func (s *Sprite) Animation() (name string, paused, finished bool) {
 	return
 }
 
+func (s *Sprite) ApplyEffect(e Effect) {
+	e.Start()
+	s.effects = append(s.effects, e)
+}
+
 func (s *Sprite) draw(target *ebiten.Image) {
-	op := &ebiten.DrawImageOptions{}
+	op := &colorm.DrawImageOptions{}
+	// TODO: effects can be pre- and post-draw.
 	s.transform(op, int(s.Dim().X), int(s.Dim().Y))
 	op.GeoM.Translate(float64(s.PixelPos().X), float64(s.PixelPos().Y))
 	s.activeAnim.Draw(target, op)
+	for i := 0; i < len(s.effects); i++ {
+		s.effects[i].draw(target, op)
+	}
 }
-
-// func (s *Sprite)
 
 // TODO: should Object be scaled instead?
 func (s *Sprite) Scale(x, y float32) {
@@ -88,6 +100,12 @@ func (s *Sprite) Scale(x, y float32) {
 func (s *Sprite) Update() {
 	s.activeAnim.Update(G.Dt())
 	s.Object.Update()
+	for j := 0; j < len(s.effects); j++ {
+		finished := s.effects[j].Update()
+		if finished {
+			s.effects = append(s.effects[:j], s.effects[j+1:]...)
+		}
+	}
 }
 
 func (s *Sprite) StopAnimation() {

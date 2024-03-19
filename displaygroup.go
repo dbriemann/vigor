@@ -6,15 +6,15 @@ import (
 
 type DisplayGroup struct {
 	// TODO: use better data structure than slice for adding, removing and being ordered.
-	staged  []Stageable
+	staged  []stageable
 	visible bool
 }
 
-func (d *DisplayGroup) Add(s Stageable) {
+func (d *DisplayGroup) Add(s stageable) {
 	d.staged = append(d.staged, s)
 }
 
-func (d *DisplayGroup) Remove(s Stageable) {
+func (d *DisplayGroup) Remove(s stageable) {
 	id := s.Id()
 	for i := 0; i < len(d.staged); i++ {
 		if d.staged[i].Id() == id {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/tanema/gween"
 	"github.com/tanema/gween/ease"
 )
@@ -182,8 +183,9 @@ func (a *Animation) Update(dt float32) {
 	a.Finished = finished
 }
 
-func (a *Animation) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	target.DrawImage(a.Images[a.Frame], op)
+func (a *Animation) Draw(target *ebiten.Image, op *colorm.DrawImageOptions) {
+	cm := colorm.ColorM{}
+	colorm.DrawImage(target, a.Images[a.Frame], cm, op)
 }
 
 func (a *Animation) SetFrames(frames []int) {
