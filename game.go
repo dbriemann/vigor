@@ -21,8 +21,11 @@ type internalGame struct {
 
 func (g *internalGame) Draw(target *ebiten.Image) {
 	// target.Fill(color.RGBA{0xff, 0, 0, 0xff})
-	op := &colorm.DrawImageOptions{}
-	g.stage.draw(target)
+	op := colorm.DrawImageOptions{}
+	for i := 0; i < len(g.effects); i++ {
+		g.effects[i].modifyDraw(&op)
+	}
+	g.stage.draw(target, op)
 	for i := 0; i < len(g.effects); i++ {
 		g.effects[i].draw(target, op)
 	}
@@ -51,7 +54,6 @@ func (g *internalGame) Layout(width, height int) (logicalWidth, logicalHeight in
 }
 
 func InitGame(g Game) error {
-	// TODO: put this all in RunGame?
 	G.assets = NewAssetManager()
 
 	if err := G.assets.LoadConfig(configFilePath); err != nil {

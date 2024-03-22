@@ -30,6 +30,8 @@ type Game struct {
 	spikesBottom   *vigor.Image
 	featherEmitter *vigor.Emitter
 	background     *vigor.Image
+	flash          *vigor.FlashEffect
+	shake          *vigor.ShakeEffect
 	gameOverScene  bool
 }
 
@@ -39,7 +41,8 @@ func (g *Game) Init() {
 	g.background = vigor.NewImage("background")
 	vigor.G.Add(g.background)
 	g.background.SetPos(0, 0)
-	flash := vigor.NewFlashEffect(g.background, 1.0, ease.Linear, ease.Linear)
+	g.flash = vigor.NewFlashEffect(g.background, 0.3, ease.Linear, ease.Linear)
+	g.shake = vigor.NewShakeEffect(0.6, 6, 6)
 
 	g.spikesTop = vigor.NewImage("spikes")
 	g.spikesTop.SetPos(0, 0)
@@ -68,14 +71,14 @@ func (g *Game) Init() {
 
 	g.featherEmitter = vigor.NewParticleEmitter(*feather, screenWidth/2, screenHeight/2, 10, 0)
 	vigor.G.Add(g.featherEmitter)
-
-	vigor.G.ApplyEffect(flash)
 }
 
 func (g *Game) Over() {
 	// TODO: wait for effects to end
 	g.featherEmitter.SetOrigin(g.dove.Pos().X, g.dove.Pos().Y)
 	g.dove.Die()
+	vigor.G.ApplyEffect(g.flash)
+	vigor.G.ApplyEffect(g.shake)
 	g.featherEmitter.Show(true)
 	g.featherEmitter.Burst()
 	g.gameOverScene = true

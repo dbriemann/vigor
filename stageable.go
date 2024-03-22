@@ -1,9 +1,12 @@
 package vigor
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
+)
 
 type stageable interface {
-	draw(*ebiten.Image)
+	draw(*ebiten.Image, colorm.DrawImageOptions)
 
 	Id() uint64
 	Update()
@@ -11,7 +14,7 @@ type stageable interface {
 	Show(bool)
 }
 
-type effectable interface {
+type effected interface {
 	stageable
 	Dim() *Vec2[uint32]
 	ApplyEffect(e Effect)

@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 type particle struct {
@@ -120,9 +121,9 @@ func (e *Emitter) ActiveParticles() int {
 	return e.size
 }
 
-func (e *Emitter) draw(target *ebiten.Image) {
+func (e *Emitter) draw(target *ebiten.Image, op colorm.DrawImageOptions) {
 	for i := 0; i < e.size; i++ {
-		e.particles[i].draw(target)
+		e.particles[i].draw(target, op)
 	}
 }
 

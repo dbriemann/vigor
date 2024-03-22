@@ -8,7 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-var _ effectable = (*Image)(nil)
+var _ effected = (*Image)(nil)
 
 // Image is similar to a sprite, but can be altered and is not animated.
 type Image struct {
@@ -60,6 +60,7 @@ func NewCanvas(width, height int) *Image {
 }
 
 func (i *Image) ApplyEffect(e Effect) {
+	e.Reset()
 	e.Start()
 	i.effects = append(i.effects, e)
 }
@@ -74,12 +75,20 @@ func (i *Image) Update() {
 	}
 }
 
-func (c *Image) draw(target *ebiten.Image) {
-	op := &colorm.DrawImageOptions{}
+// TODO: some effects "draw" before the effected and some after..
+// 1. update effect vars => Update()
+// 2. transform draw options for effected => draw()
+// (2b. draw to effected?)
+// 3. draw layer over effected => draw()
+
+func (c *Image) draw(target *ebiten.Image, op colorm.DrawImageOptions) {
 	cm := colorm.ColorM{}
-	c.transform(op, int(c.Dim().X), int(c.Dim().Y))
+	c.transform(&op, int(c.Dim().X), int(c.Dim().Y))
 	op.GeoM.Translate(float64(c.PixelPos().X), float64(c.PixelPos().Y))
-	colorm.DrawImage(target, c.image, cm, op)
+	for i := 0; i < len(c.effects); i++ {
+		c.effects[i].modifyDraw(&op)
+	}
+	colorm.DrawImage(target, c.image, cm, &op)
 	for i := 0; i < len(c.effects); i++ {
 		c.effects[i].draw(target, op)
 	}

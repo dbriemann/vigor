@@ -8,7 +8,7 @@ import (
 	"github.com/tanema/gween/ease"
 )
 
-var _ effectable = (*Sprite)(nil)
+var _ effected = (*Sprite)(nil)
 
 // Sprite represents every entity that has a position, is updated and drawn.
 type Sprite struct {
@@ -76,15 +76,17 @@ func (s *Sprite) Animation() (name string, paused, finished bool) {
 }
 
 func (s *Sprite) ApplyEffect(e Effect) {
+	e.Reset()
 	e.Start()
 	s.effects = append(s.effects, e)
 }
 
-func (s *Sprite) draw(target *ebiten.Image) {
-	op := &colorm.DrawImageOptions{}
-	// TODO: effects can be pre- and post-draw.
-	s.transform(op, int(s.Dim().X), int(s.Dim().Y))
+func (s *Sprite) draw(target *ebiten.Image, op colorm.DrawImageOptions) {
+	s.transform(&op, int(s.Dim().X), int(s.Dim().Y))
 	op.GeoM.Translate(float64(s.PixelPos().X), float64(s.PixelPos().Y))
+	for i := 0; i < len(s.effects); i++ {
+		s.effects[i].modifyDraw(&op)
+	}
 	s.activeAnim.Draw(target, op)
 	for i := 0; i < len(s.effects); i++ {
 		s.effects[i].draw(target, op)

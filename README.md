@@ -1,7 +1,7 @@
 # vigor
 
 A framework for building 2d games. Built on top of `ebitengine`, batteries included but keeping a simple interface.
-Inspired by ``HaxeFlixel``.
+Inspired by `HaxeFlixel`.
 
 ## Features
 

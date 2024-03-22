@@ -45,6 +45,7 @@ func (g *glob) Add(s stageable) {
 }
 
 func (g *glob) ApplyEffect(e Effect) {
+	e.Reset()
 	e.Start()
 	g.internalGame.effects = append(g.internalGame.effects, e)
 }

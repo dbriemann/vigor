@@ -2,7 +2,11 @@ package vigor
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
+
+// TODO: ?
+// var _ stageable = (*DisplayGroup)(nil)
 
 type DisplayGroup struct {
 	// TODO: use better data structure than slice for adding, removing and being ordered.
@@ -24,10 +28,10 @@ func (d *DisplayGroup) Remove(s stageable) {
 	}
 }
 
-func (d *DisplayGroup) draw(target *ebiten.Image) {
+func (d *DisplayGroup) draw(target *ebiten.Image, op colorm.DrawImageOptions) {
 	for i := 0; i < len(d.staged); i++ {
 		if d.staged[i].Visible() {
-			d.staged[i].draw(target)
+			d.staged[i].draw(target, op)
 		}
 	}
 }

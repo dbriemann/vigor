@@ -183,9 +183,9 @@ func (a *Animation) Update(dt float32) {
 	a.Finished = finished
 }
 
-func (a *Animation) Draw(target *ebiten.Image, op *colorm.DrawImageOptions) {
+func (a *Animation) Draw(target *ebiten.Image, op colorm.DrawImageOptions) {
 	cm := colorm.ColorM{}
-	colorm.DrawImage(target, a.Images[a.Frame], cm, op)
+	colorm.DrawImage(target, a.Images[a.Frame], cm, &op)
 }
 
 func (a *Animation) SetFrames(frames []int) {

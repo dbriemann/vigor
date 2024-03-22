@@ -10,10 +10,16 @@ import (
 	"github.com/tanema/gween/ease"
 )
 
+var (
+	_ Effect = (*ShakeEffect)(nil)
+	_ Effect = (*FlashEffect)(nil)
+)
+
 // TODO: somehow unify effect usage
 type Effect interface {
 	Update() bool
-	draw(*ebiten.Image, *colorm.DrawImageOptions)
+	modifyDraw(*colorm.DrawImageOptions)
+	draw(*ebiten.Image, colorm.DrawImageOptions)
 
 	Start()
 	Stop()
@@ -60,11 +66,14 @@ func (e *ShakeEffect) Update() bool {
 	return !e.running
 }
 
-func (e *ShakeEffect) draw(_ *ebiten.Image, op *ebiten.DrawImageOptions) {
+func (e *ShakeEffect) modifyDraw(op *colorm.DrawImageOptions) {
 	if !e.running {
 		return
 	}
 	op.GeoM.Translate(float64(e.displaceX), float64(e.displaceY))
+}
+
+func (e *ShakeEffect) draw(_ *ebiten.Image, _ colorm.DrawImageOptions) {
 }
 
 func (e *ShakeEffect) Reset() {
@@ -90,7 +99,7 @@ type FlashEffect struct {
 }
 
 // TODO: make dynamic list of tween sequences (variadic arguments)
-func NewFlashEffect(s effectable, duration float32, in, out ease.TweenFunc) *FlashEffect {
+func NewFlashEffect(s effected, duration float32, in, out ease.TweenFunc) *FlashEffect {
 	e := &FlashEffect{
 		overlay:  ebiten.NewImage(int(s.Dim().X), int(s.Dim().Y)),
 		finished: false,
@@ -101,6 +110,8 @@ func NewFlashEffect(s effectable, duration float32, in, out ease.TweenFunc) *Fla
 		),
 	}
 	e.overlay.Fill(color.White)
+
+	// TODO: avoid flash to be moved with shake
 
 	return e
 }
@@ -119,13 +130,16 @@ func (e *FlashEffect) Update() bool {
 	return finished
 }
 
-func (e *FlashEffect) draw(target *ebiten.Image, op *colorm.DrawImageOptions) {
+func (e *FlashEffect) modifyDraw(_ *colorm.DrawImageOptions) {
+}
+
+func (e *FlashEffect) draw(target *ebiten.Image, op colorm.DrawImageOptions) {
 	if !e.running || e.finished {
 		return
 	}
 	cm := colorm.ColorM{}
 	cm.Scale(1, 1, 1, float64(e.value))
-	colorm.DrawImage(target, e.overlay, cm, op)
+	colorm.DrawImage(target, e.overlay, cm, &op)
 }
 
 func (e *FlashEffect) Reset() {
