@@ -24,7 +24,7 @@ Inspired by `HaxeFlixel`.
 
 - TODO: improve collisions for moving objects
 - TODO: input is currently `ebitengine-input`: we might internalize or replace with own system
-- TODO: tweening is currently `ganema/tween`: we might internalize or replace with own system
+- TODO: tweening is currently `ganema/tween`: we might internalize or replace with own system | allow tweening vec2d
 - TODO: thread safety
 
 ## Architecture

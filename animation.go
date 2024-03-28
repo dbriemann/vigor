@@ -59,13 +59,11 @@ type AnimationTemplate struct {
 	Images      []*ebiten.Image
 	Frames      []int
 	Section     Section
-	FrameWidth  int // TODO: should this be uint32?
-	FrameHeight int // TODO: should this be uint32?
+	FrameWidth  int
+	FrameHeight int
 	Duration    time.Duration
 	Looped      bool
 }
-
-// TODO: simplify animations, remove sprite sheets and sections, just use images for each animation.
 
 func NewAnimationTemplate(sheet *ebiten.Image, section Section, w, h int, frames []int, duration time.Duration, looped bool, easeFunc ease.TweenFunc) (*AnimationTemplate, error) {
 	t := AnimationTemplate{

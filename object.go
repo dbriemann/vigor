@@ -1,7 +1,14 @@
 package vigor
 
+import (
+	"github.com/tanema/gween"
+	"github.com/tanema/gween/ease"
+)
+
 // Object represents any entity that has a position, updates. It can either be with or without motion.
 type Object struct {
+	tweenX         *gween.Tween
+	tweenY         *gween.Tween
 	pos            Vec2[float32]
 	lastPos        Vec2[float32]
 	vel            Vec2[float32]
@@ -11,78 +18,106 @@ type Object struct {
 	motionDisabled bool
 }
 
-func NewObject() (e Object) {
+func NewObject() (o Object) {
 	G.idcounter++
-	e.id = G.createId()
-	e.motionDisabled = true
+	o.id = G.createId()
+	o.motionDisabled = true
 	return
 }
 
-func (e *Object) Id() uint64 {
-	return e.id
+func (o *Object) Id() uint64 {
+	return o.id
 }
 
-func (e *Object) SetPos(x, y float32) {
-	e.lastPos.X = x
-	e.lastPos.Y = y
-	e.pos.X = x
-	e.pos.Y = y
+func (o *Object) TweenTo(x, y, duration float32, f ease.TweenFunc) {
+	o.SetMotion(true)
+	o.tweenX = gween.New(o.pos.X, x, duration, f)
+	o.tweenY = gween.New(o.pos.Y, y, duration, f)
 }
 
-func (e *Object) SetVel(x, y float32) {
-	e.vel.X = x
-	e.vel.Y = y
-	e.SetMotion(true)
+func (o *Object) SetPos(x, y float32) {
+	o.lastPos.X = x
+	o.lastPos.Y = y
+	o.pos.X = x
+	o.pos.Y = y
 }
 
-func (e *Object) SetAccel(x, y float32) {
-	e.accel.X = x
-	e.accel.Y = y
-	e.SetMotion(true)
+func (o *Object) SetVel(x, y float32) {
+	o.vel.X = x
+	o.vel.Y = y
+	o.SetMotion(true)
 }
 
-func (e *Object) SetDim(x, y uint32) {
-	e.dim.X = x
-	e.dim.Y = y
+func (o *Object) SetAccel(x, y float32) {
+	o.accel.X = x
+	o.accel.Y = y
+	o.SetMotion(true)
 }
 
-func (e *Object) SetMotion(enabled bool) {
-	e.motionDisabled = !enabled
+func (o *Object) SetDim(x, y uint32) {
+	o.dim.X = x
+	o.dim.Y = y
 }
 
-func (e *Object) PixelPos() Vec2[int] {
+func (o *Object) SetMotion(enabled bool) {
+	o.motionDisabled = !enabled
+}
+
+func (o *Object) PixelPos() Vec2[int] {
 	// TODO: is Round better than Floor for pixel perfect positions?
-	return Vec2Floor[float32, int](e.pos)
+	return Vec2Floor[float32, int](o.pos)
 }
 
-func (e *Object) Pos() *Vec2[float32] {
-	return &e.pos
+func (o *Object) Pos() *Vec2[float32] {
+	return &o.pos
 }
 
-func (e *Object) Vel() *Vec2[float32] {
-	return &e.vel
+func (o *Object) Vel() *Vec2[float32] {
+	return &o.vel
 }
 
-func (e *Object) Accel() *Vec2[float32] {
-	return &e.accel
+func (o *Object) Accel() *Vec2[float32] {
+	return &o.accel
 }
 
-func (e *Object) Dim() *Vec2[uint32] {
-	return &e.dim
+func (o *Object) Dim() *Vec2[uint32] {
+	return &o.dim
 }
 
-func (e *Object) Update() {
-	if e.motionDisabled {
+func (o *Object) Update() {
+	if o.motionDisabled {
+		return
+	}
+
+	isTweening := false
+	dt := G.Dt()
+	if o.tweenX != nil {
+		newx, finishedx := o.tweenX.Update(dt)
+		o.pos.X = newx
+		if finishedx {
+			o.tweenX = nil
+		}
+	}
+	if o.tweenY != nil {
+		newy, finishedy := o.tweenY.Update(dt)
+		o.pos.Y = newy
+		if finishedy {
+			o.tweenY = nil
+		}
+	}
+
+	// If tweening is active we do not do the normal update routine.
+	if isTweening {
 		return
 	}
 
 	// TODO: angular velocity
 
-	e.pos.X += e.vel.X * G.Dt()
-	e.pos.Y += e.vel.Y * G.Dt()
+	o.pos.X += o.vel.X * G.Dt()
+	o.pos.Y += o.vel.Y * G.Dt()
 
-	e.vel.X += e.accel.X * G.Dt()
-	e.vel.Y += e.accel.Y * G.Dt()
+	o.vel.X += o.accel.X * G.Dt()
+	o.vel.Y += o.accel.Y * G.Dt()
 }
 
 type positionable interface {

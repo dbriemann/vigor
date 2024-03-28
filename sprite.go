@@ -21,8 +21,6 @@ type Sprite struct {
 	Object
 }
 
-// TODO: static sprite => combine with Sprite or create separate type?
-
 // NewSprite takes any amount of animations by name. These animations must exist in the asset manager.
 // The first animation is used as default animation.
 func NewSprite(animNames ...string) *Sprite {

@@ -52,7 +52,7 @@ func NewCanvas(width, height int) *Image {
 		effects: []Effect{},
 
 		visible: true,
-		image:   ebiten.NewImage(width, height), // TODO: should this be a named image in asset manager?
+		image:   ebiten.NewImage(width, height),
 	}
 	c.SetDim(uint32(width), uint32(height))
 
@@ -74,12 +74,6 @@ func (i *Image) Update() {
 		}
 	}
 }
-
-// TODO: some effects "draw" before the effected and some after..
-// 1. update effect vars => Update()
-// 2. transform draw options for effected => draw()
-// (2b. draw to effected?)
-// 3. draw layer over effected => draw()
 
 func (c *Image) draw(target *ebiten.Image, op colorm.DrawImageOptions) {
 	cm := colorm.ColorM{}

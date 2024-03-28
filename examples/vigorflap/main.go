@@ -1,366 +1,262 @@
 package main
 
-// TODO: attribution
-
 import (
-	_ "embed"
+	"fmt"
 	"image/color"
-	_ "image/png"
-	"log"
 	"math/rand"
-	"strconv"
 
 	"github.com/dbriemann/vigor"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/colorm"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/ebiten/v2/vector"
-	"github.com/tanema/gween"
+	input "github.com/quasilyte/ebitengine-input"
 	"github.com/tanema/gween/ease"
 )
 
 const (
 	screenWidth  = 160
 	screenHeight = 240
+
+	ActionFlap input.Action = iota
 )
 
 var (
-	dt                 = 1.0 / float32(ebiten.TPS())
-	score      int     = 0
-	highscore  int     = 0
-	sideTop    float32 = 0
-	sideBottom float32 = 0
+	score      int = 0
+	highscore  int = 0
+	paddleMinY int = 0
+	paddleMaxY int = 0
 )
 
-type Dove struct {
-	activeAnim *vigor.Animation
-	animSail   *vigor.Animation
-	animFlap   *vigor.Animation
-	bbox       vigor.Rect[float32]
-	vel        vigor.Vec2[float32]
-	accel      vigor.Vec2[float32]
-	flip       bool
-}
-
-func (d *Dove) Update() {
-	d.bbox.Point.X += d.vel.X * dt
-	d.bbox.Point.Y += d.vel.Y * dt
-
-	d.vel.X += d.accel.X * dt
-	d.vel.Y += d.accel.Y * dt
-
-	if d.activeAnim == d.animFlap && d.activeAnim.Finished {
-		d.activeAnim = d.animSail
-		d.activeAnim.Reset()
-		d.activeAnim.Run()
-	}
-
-	d.activeAnim.Update(dt)
-}
-
-func (d *Dove) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	d.activeAnim.Draw(target, op)
-}
-
-type Paddle struct {
-	tween *gween.Tween
-	image *ebiten.Image
-	bbox  vigor.Rect[float32]
-}
-
-func (p *Paddle) PlaceRandom() {
-	r := rand.Intn(int(sideBottom-sideTop-p.bbox.Dim.Y)) + int(sideTop)
-	p.tween = gween.New(p.bbox.Point.Y, float32(r), 0.2, ease.Linear)
-}
-
-func (p *Paddle) Update() {
-	if p.tween == nil {
-		return
-	}
-	y, done := p.tween.Update(dt)
-	if done {
-		p.tween = nil
-		return
-	}
-	p.bbox.Point.Y = y
-}
-
-func (p *Paddle) Draw(target *ebiten.Image, op *ebiten.DrawImageOptions) {
-	op.GeoM.Translate(float64(p.bbox.Point.X), float64(p.bbox.Point.Y))
-	target.DrawImage(p.image, op)
-}
-
-type Bouncer struct {
-	imageBack  *ebiten.Image
-	imageFront *ebiten.Image
-	flash      *vigor.FlashEffect
-	bbox       vigor.Rect[float32]
-}
-
-func (b *Bouncer) Draw(target *ebiten.Image) {
-	opBack := &ebiten.DrawImageOptions{}
-	opBack.GeoM.Translate(float64(b.bbox.Point.X), float64(b.bbox.Point.Y))
-	opFront := &ebiten.DrawImageOptions{}
-	opFront.GeoM.Translate(float64(b.bbox.Point.X+1), float64(b.bbox.Point.Y+1))
-
-	target.DrawImage(b.imageBack, opBack)
-	opFlash := &colorm.DrawImageOptions{}
-	opFlash.GeoM.Translate(float64(b.bbox.Point.X), float64(b.bbox.Point.Y))
-	b.flash.Draw(target, opFlash)
-	target.DrawImage(b.imageFront, opFront)
-}
-
-func (b *Bouncer) Update() {
-	b.flash.Update(dt)
+var keymap = input.Keymap{
+	ActionFlap: {input.KeySpace, input.KeyGamepadX},
 }
 
 type Game struct {
-	background   *ebiten.Image
-	spikes       *ebiten.Image
-	paddle       *ebiten.Image
-	shake        *vigor.ShakeEffect
-	man          vigor.AssetManager
-	dove         Dove
-	paddleLeft   Paddle
-	paddleRight  Paddle
-	bouncerLeft  Bouncer
-	bouncerRight Bouncer
-	deathAnim    bool
+	input          *input.Handler
+	dove           *Dove
+	bouncerLeft    *Bouncer
+	bouncerRight   *Bouncer
+	paddleLeft     *Paddle
+	paddleRight    *Paddle
+	spikesTop      *vigor.Image
+	spikesBottom   *vigor.Image
+	featherEmitter *vigor.Emitter
+	background     *vigor.Image
+	flash          *vigor.FlashEffect
+	shake          *vigor.ShakeEffect
+	gameOverScene  bool
 }
 
 func (g *Game) Init() {
 	score = 0
 
-	off := screenHeight + g.paddleLeft.bbox.Dim.Y
-	g.paddleLeft.bbox.Point.Y = float32(off)
-	g.paddleLeft.tween = nil
-	g.paddleRight.bbox.Point.Y = float32(off)
-	g.paddleRight.tween = nil
+	g.input = vigor.NewInputHandler(0, keymap)
 
-	g.dove.bbox.Point.X = screenWidth / 2
-	g.dove.bbox.Point.Y = screenHeight / 2
-	g.dove.vel.X = 0
-	g.dove.vel.Y = 0
-	g.dove.accel.X = 0
-	g.dove.accel.Y = 0
-	g.dove.flip = false
-	g.dove.activeAnim = g.dove.animSail
-	g.dove.activeAnim.Run()
-	g.deathAnim = false
-}
+	g.background = vigor.NewImage("background")
+	vigor.G.Add(g.background)
+	g.background.SetPos(0, 0)
+	g.flash = vigor.NewFlashEffect(g.background, 0.3, ease.Linear, ease.Linear)
+	g.shake = vigor.NewShakeEffect(0.6, 6, 6)
 
-func (g *Game) Update() error {
-	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
-		if g.dove.accel.Y == 0 {
-			g.dove.accel.Y = 500
-			g.dove.vel.X = 80
-		}
-		g.dove.activeAnim = g.dove.animFlap
-		g.dove.activeAnim.Reset()
-		g.dove.activeAnim.Finished = false
-		g.dove.activeAnim.Run()
-		g.dove.vel.Y = -screenHeight
-	}
+	g.spikesTop = vigor.NewImage("spikes")
+	g.spikesTop.SetPos(0, 0)
+	g.spikesTop.FlipY()
+	vigor.G.Add(g.spikesTop)
 
-	if g.dove.bbox.Intersects(g.bouncerLeft.bbox) {
-		g.bouncerLeft.flash.Reset()
-		g.bouncerLeft.flash.Start()
-		g.paddleRight.PlaceRandom()
-		score++
-		g.dove.vel.X *= -1
-		g.dove.flip = false
-	}
+	spikesHeight := g.spikesTop.Dim().Y
 
-	if g.dove.bbox.Intersects(g.bouncerRight.bbox) {
-		g.bouncerRight.flash.Reset()
-		g.bouncerRight.flash.Start()
-		g.paddleLeft.PlaceRandom()
-		score++
-		g.dove.vel.X *= -1
-		g.dove.flip = true
-	}
+	g.spikesBottom = vigor.NewImage("spikes")
+	g.spikesBottom.SetPos(0, float32(screenHeight-spikesHeight))
+	vigor.G.Add(g.spikesBottom)
 
-	g.paddleLeft.Update()
-	g.paddleRight.Update()
-	g.dove.Update()
+	bouncerHeight := int(screenHeight-2*spikesHeight) - 4
+	bouncerTy := spikesHeight + 2
+	g.bouncerLeft = NewBouncer(0, float32(bouncerTy), bouncerHeight)
+	g.bouncerLeft.Init()
 
-	if g.dove.bbox.Point.Y <= float32(g.spikes.Bounds().Dy()) ||
-		g.dove.bbox.Point.Y+g.dove.bbox.Dim.Y >= float32(screenHeight-g.spikes.Bounds().Dy()) ||
-		g.dove.bbox.Intersects(g.paddleLeft.bbox) ||
-		g.dove.bbox.Intersects(g.paddleRight.bbox) {
-		g.Over()
-	}
+	g.bouncerRight = NewBouncer(screenWidth-4, float32(bouncerTy), bouncerHeight)
+	g.bouncerRight.Init()
 
-	g.bouncerLeft.Update()
-	g.bouncerRight.Update()
+	g.paddleLeft = NewPaddle(5, false)
+	vigor.G.Add(g.paddleLeft)
+	paddleWidth := g.paddleLeft.Dim().X
+	g.paddleRight = NewPaddle(screenWidth-5-int(paddleWidth), true)
+	vigor.G.Add(g.paddleRight)
 
-	if g.deathAnim {
-		g.dove.bbox.Point.X = 6666
-		g.deathAnim = !g.shake.Update(dt)
-		if !g.deathAnim {
-			g.Init()
-		}
-	}
+	paddleMinY = int(spikesHeight) + 2
+	paddleMaxY = screenHeight - 2*int(spikesHeight) - 4 - int(g.paddleLeft.Dim().Y)
 
-	return nil
+	// Dove is added last so it is painted last.
+	g.dove = NewDove()
+	g.dove.Init()
+
+	feather := vigor.NewImage("feather")
+	g.featherEmitter = vigor.NewParticleEmitter(*feather, screenWidth/2, screenHeight/2, 10, 0)
+	vigor.G.Add(g.featherEmitter)
 }
 
 func (g *Game) Over() {
-	if g.deathAnim {
-		return
-	}
-
 	if score > highscore {
 		highscore = score
 	}
 
-	g.shake.Reset()
-	g.shake.Start()
-	g.deathAnim = true
-
-	score = 0
+	g.featherEmitter.SetOrigin(g.dove.Pos().X, g.dove.Pos().Y)
+	g.dove.Die()
+	vigor.G.ApplyEffect(g.flash)
+	vigor.G.ApplyEffect(g.shake)
+	g.featherEmitter.Show(true)
+	g.featherEmitter.Burst()
+	g.gameOverScene = true
 }
 
-func (g *Game) Draw(target *ebiten.Image) {
-	scene := ebiten.NewImage(target.Bounds().Dx(), target.Bounds().Dy())
-	scene.DrawImage(g.background, nil)
-
-	ebitenutil.DebugPrintAt(scene, strconv.Itoa(score), screenWidth/2-5, screenHeight-50)
+func (g *Game) Update() {
+	// TODO: create font (placeable) entity
+	scoreStr := fmt.Sprintf("\n\n\n\n\n\n             %d", score)
 	if highscore > 0 {
-		ebitenutil.DebugPrintAt(scene, "high: "+strconv.Itoa(highscore), screenWidth/2-20, 50)
+		scoreStr += fmt.Sprintf("\n       high: %d", highscore)
+	}
+	vigor.DebugPrintf(scoreStr)
+
+	if g.gameOverScene {
+		if g.featherEmitter.ActiveParticles() == 0 {
+			g.gameOverScene = false
+			g.dove.Live()
+			g.paddleLeft.PlaceOffScreen()
+			g.paddleRight.PlaceOffScreen()
+			score = 0
+		}
+		return
 	}
 
-	topSpikesOp := &ebiten.DrawImageOptions{}
-	topSpikesOp.GeoM.Scale(1, -1)
-	topSpikesOp.GeoM.Translate(0, float64(g.spikes.Bounds().Dy()))
-	scene.DrawImage(g.spikes, topSpikesOp)
-
-	bottomSpikesOp := &ebiten.DrawImageOptions{}
-	bottomSpikesOp.GeoM.Translate(0, float64(screenHeight-g.spikes.Bounds().Dy()))
-	scene.DrawImage(g.spikes, bottomSpikesOp)
-
-	g.bouncerLeft.Draw(scene)
-	g.bouncerRight.Draw(scene)
-
-	lpadOp := &ebiten.DrawImageOptions{}
-	g.paddleLeft.Draw(scene, lpadOp)
-
-	rpadOp := &ebiten.DrawImageOptions{}
-	rpadOp.GeoM.Scale(-1, 1)
-	rpadOp.GeoM.Translate(float64(g.paddleRight.bbox.Dim.X), 0)
-	g.paddleRight.Draw(scene, rpadOp)
-
-	doveOp := &ebiten.DrawImageOptions{}
-	if g.dove.flip {
-		doveOp.GeoM.Scale(-1, 1)
-		doveOp.GeoM.Translate(float64(g.dove.bbox.Dim.X), 0)
+	if g.input.ActionIsJustPressed(ActionFlap) {
+		if g.dove.Object.Accel().Y == 0 {
+			g.dove.SetAccel(0, 500)
+			g.dove.Accel().Y = 500
+			g.dove.Vel().X = 80
+		}
+		g.dove.SetAnimation("dove_flap")
+		g.dove.Vel().Y = -screenHeight
 	}
-	doveOp.GeoM.Translate(float64(g.dove.bbox.Point.X), float64(g.dove.bbox.Point.Y))
-	g.dove.Draw(scene, doveOp)
 
-	sceneOp := &ebiten.DrawImageOptions{}
-	g.shake.Apply(sceneOp)
-	target.DrawImage(scene, sceneOp)
+	if vigor.Collides(g.dove, g.spikesTop) ||
+		vigor.Collides(g.dove, g.spikesBottom) ||
+		vigor.Collides(g.dove, g.paddleLeft) ||
+		vigor.Collides(g.dove, g.paddleRight) {
+		// death
+		g.Over()
+	} else if vigor.Collides(g.dove, g.bouncerLeft.back) {
+		score++
+		g.dove.Vel().X *= -1
+		g.dove.FlipX()
+		g.bouncerLeft.back.ApplyEffect(g.bouncerLeft.flash)
+		g.paddleRight.PlaceRandomly()
+	} else if vigor.Collides(g.dove, g.bouncerRight.back) {
+		score++
+		g.dove.Vel().X *= -1
+		g.dove.FlipX()
+		g.bouncerRight.back.ApplyEffect(g.bouncerRight.flash)
+		g.paddleLeft.PlaceRandomly()
+	}
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+func (g *Game) Layout(w, h int) (int, int) {
 	return screenWidth, screenHeight
 }
 
-func NewGame() *Game {
-	g := &Game{
-		man:       vigor.NewAssetManager(),
-		shake:     vigor.NewShakeEffect(0.5, 8, 8),
-		deathAnim: false,
+type Bouncer struct {
+	back  *vigor.Image
+	front *vigor.Image
+	flash *vigor.FlashEffect
+}
+
+func NewBouncer(x, y float32, height int) *Bouncer {
+	b := &Bouncer{
+		back:  vigor.NewCanvas(4, height),
+		front: vigor.NewCanvas(4, height),
 	}
+	b.back.SetPos(x, y)
+	b.front.SetPos(x, y)
 
-	if err := g.man.LoadConfig("assets/config.json"); err != nil {
-		panic(err)
+	return b
+}
+
+func (b *Bouncer) Init() {
+	b.back.DrawFilledRect(0, 0, 4, screenHeight, color.RGBA{53, 53, 61, 240}, false)
+	b.front.DrawFilledRect(1, 1, 2, screenHeight-2, color.RGBA{100, 106, 125, 225}, false)
+	vigor.G.Add(b.back)
+	vigor.G.Add(b.front)
+	b.flash = vigor.NewFlashEffect(b.back, 0.15, ease.Linear, ease.Linear)
+}
+
+type Paddle struct {
+	vigor.Image
+	x int
+}
+
+func NewPaddle(x int, flip bool) *Paddle {
+	p := &Paddle{
+		x:     x,
+		Image: *vigor.NewImage("paddle"),
 	}
-
-	g.background = g.man.GetImageOrPanic("background")
-	g.spikes = g.man.GetImageOrPanic("spikes")
-	g.paddle = g.man.GetImageOrPanic("paddle")
-
-	a, err := vigor.NewAnimation(g.man.AnimationTemplates["dove_sail"])
-	if err != nil {
-		panic(err)
+	p.PlaceOffScreen()
+	if flip {
+		p.FlipX()
 	}
-	g.dove.animSail = a
+	return p
+}
 
-	a, err = vigor.NewAnimation(g.man.AnimationTemplates["dove_flap"])
-	if err != nil {
-		panic(err)
+func (p *Paddle) PlaceOffScreen() {
+	p.SetPos(float32(p.x), float32(screenHeight+p.Dim().Y))
+}
+
+func (p *Paddle) PlaceRandomly() {
+	y := float32(rand.Intn(paddleMaxY) + paddleMinY)
+	x := p.Pos().X
+	p.TweenTo(x, y, 0.1, ease.Linear)
+}
+
+type Dove struct {
+	vigor.Sprite
+}
+
+func NewDove() *Dove {
+	d := &Dove{
+		Sprite: *vigor.NewSprite("dove_sail", "dove_flap"),
 	}
-	g.dove.animFlap = a
+	return d
+}
 
-	g.paddleLeft.image = g.paddle
-	g.paddleRight.image = g.paddle
-	g.paddleLeft.bbox.Dim.X = float32(g.paddle.Bounds().Dx())
-	g.paddleLeft.bbox.Dim.Y = float32(g.paddle.Bounds().Dy())
-	g.paddleRight.bbox.Dim.X = float32(g.paddle.Bounds().Dx())
-	g.paddleRight.bbox.Dim.Y = float32(g.paddle.Bounds().Dy())
+func (d *Dove) Die() {
+	d.Show(false)
+	d.SetMotion(false)
+	d.SetPos(screenWidth/2, screenHeight/2)
+}
 
-	g.Init()
-	g.dove.bbox.Dim.X = float32(g.dove.activeAnim.FrameWidth)
-	g.dove.bbox.Dim.Y = float32(g.dove.activeAnim.FrameHeight)
+func (d *Dove) Live() {
+	d.Show(true)
+	d.SetMotion(true)
+	d.SetPos(screenWidth/2, screenHeight/2)
+	d.SetVel(0, 0)
+	d.SetAccel(0, 0)
+	d.Scale(1, 1)
+}
 
-	sideTop = float32(g.spikes.Bounds().Dy() + 2)
-	sideBottom = float32(screenHeight - 2*g.spikes.Bounds().Dy() - 4)
+func (d *Dove) Init() {
+	d.Live()
+	vigor.G.Add(d)
+}
 
-	g.bouncerLeft.bbox.Dim.X = 4
-	g.bouncerLeft.bbox.Point.X = 1
-	g.bouncerLeft.bbox.Point.Y = sideTop
-	g.bouncerLeft.bbox.Dim.Y = sideBottom
-
-	g.bouncerRight.bbox.Dim.X = 4
-	g.bouncerRight.bbox.Point.X = screenWidth - g.bouncerRight.bbox.Dim.X - 1
-	g.bouncerRight.bbox.Point.Y = sideTop
-	g.bouncerRight.bbox.Dim.Y = sideBottom
-
-	g.paddleLeft.bbox.Point.X = float32(g.bouncerLeft.bbox.Dim.X + 2)
-	g.paddleRight.bbox.Point.X = screenWidth - g.paddleRight.bbox.Dim.X - float32(g.bouncerRight.bbox.Dim.X) - 2
-
-	// Create bouncer sprite
-	bouncerBackImg := ebiten.NewImage(4, int(sideBottom))
-	vector.DrawFilledRect(
-		bouncerBackImg,
-		float32(0),
-		float32(0),
-		float32(4),
-		float32(sideBottom),
-		color.RGBA{53, 53, 61, 240},
-		false,
-	)
-	bouncerFrontImg := ebiten.NewImage(4-2, int(sideBottom)-2)
-	vector.DrawFilledRect(
-		bouncerFrontImg,
-		float32(0),
-		float32(0),
-		float32(2),
-		float32(sideBottom-2),
-		color.RGBA{100, 106, 125, 225},
-		false,
-	)
-	g.bouncerLeft.imageBack = bouncerBackImg
-	g.bouncerLeft.imageFront = bouncerFrontImg
-	g.bouncerRight.imageBack = bouncerBackImg
-	g.bouncerRight.imageFront = bouncerFrontImg
-
-	g.bouncerLeft.flash = vigor.NewFlashEffect(g.bouncerLeft.imageBack, 0.2, ease.Linear, ease.Linear)
-	g.bouncerRight.flash = vigor.NewFlashEffect(g.bouncerRight.imageBack, 0.2, ease.Linear, ease.Linear)
-
-	return g
+func (d *Dove) Update() {
+	anim, _, finished := d.Animation()
+	if anim == "dove_flap" && finished {
+		d.ResetAnimation()
+		d.SetAnimation("dove_sail")
+	}
+	d.Sprite.Update()
 }
 
 func main() {
-	game := NewGame()
+	vigor.SetWindowSize(3*screenWidth, 3*screenHeight)
+	g := Game{}
 
-	ebiten.SetWindowSize(screenWidth*3, screenHeight*3)
-	ebiten.SetWindowTitle("Vigorflap")
+	vigor.InitGame(&g)
 
-	if err := ebiten.RunGame(game); err != nil {
-		log.Fatal(err)
-	}
+	vigor.RunGame()
 }

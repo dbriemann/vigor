@@ -13,7 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// TODO: should this be private in the vigor package?
+// TODO: make private after old vigorflap is removed.
 type AssetManager struct {
 	// TODO: audio
 	// TODO: others

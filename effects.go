@@ -15,7 +15,6 @@ var (
 	_ Effect = (*FlashEffect)(nil)
 )
 
-// TODO: somehow unify effect usage
 type Effect interface {
 	Update() bool
 	modifyDraw(*colorm.DrawImageOptions)
@@ -98,7 +97,7 @@ type FlashEffect struct {
 	running  bool
 }
 
-// TODO: make dynamic list of tween sequences (variadic arguments)
+// TODO: make dynamic list of tween sequences instead of fixed in/out tween (variadic arguments).
 func NewFlashEffect(s effected, duration float32, in, out ease.TweenFunc) *FlashEffect {
 	e := &FlashEffect{
 		overlay:  ebiten.NewImage(int(s.Dim().X), int(s.Dim().Y)),
@@ -110,8 +109,6 @@ func NewFlashEffect(s effected, duration float32, in, out ease.TweenFunc) *Flash
 		),
 	}
 	e.overlay.Fill(color.White)
-
-	// TODO: avoid flash to be moved with shake
 
 	return e
 }
